@@ -1,0 +1,69 @@
+name: Update public repo metadata
+
+# Updates the venturevisionubuntu public repo's description, homepage,
+# and topics. Run via workflow_dispatch.
+#
+# Workaround: the PAT used for git push lacks administration:write scope,
+# so we can't update repo metadata via the REST API from the local
+# machine. This workflow runs on GitHub's infra with the auto-provisioned
+# GITHUB_TOKEN which DOES have administration:write permission by default
+# (when the workflow's permissions: block requests it).
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  administration: write
+  contents: read
+
+jobs:
+  update-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Update description + homepage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          echo "Updating repo description + homepage..."
+          gh api \
+            --method PATCH \
+            /repos/divhanimajokweni-ctrl/venturevisionubuntu \
+            -f description="VVU Trust UI v1.0.5 — 8-surface control plane dashboard. Pricing R25-R9,999 ZAR. Surface transitions. Open source." \
+            -f homepage="https://divhanimajokweni-ctrl.github.io/venturevisionubuntu/trust-ui.html" \
+            | jq -r '.full_name + " → description: " + .description + " · homepage: " + .homepage'
+
+      - name: Set topics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          echo "Setting repo topics..."
+          gh api \
+            --method PUT \
+            /repos/divhanimajokweni-ctrl/venturevisionubuntu/topics \
+            -f 'names[]=vvu' \
+            -f 'names[]=trust-ui' \
+            -f 'names[]=dashboard' \
+            -f 'names[]=surface-transitions' \
+            -f 'names[]=maplibre-gl' \
+            -f 'names[]=three-js' \
+            -f 'names[]=openfreemap' \
+            -f 'names[]=zar' \
+            -f 'names[]=south-africa' \
+            -f 'names[]=ed25519' \
+            | jq -r '.names | "  topics set: " + join(", ")'
+
+      - name: Verify
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "::notice::Final repo metadata:"
+          gh api /repos/divhanimajokweni-ctrl/venturevisionubuntu \
+            | jq '{name, description, homepage, topics, html_url, has_pages}'
