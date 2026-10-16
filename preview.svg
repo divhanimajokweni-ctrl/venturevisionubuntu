@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- VVU Trust UI · Animated Wireframe Preview
+     Renders inline in GitHub README via <img src="...svg">
+     Cycles through 8 surfaces — each with its own accent color -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1344 600" width="100%" height="auto" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
+  <defs>
+    <!-- Subtle grid background -->
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#1a1a22" stroke-width="0.5"/>
+    </pattern>
+    <!-- Glow filter for active tab -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Reusable tab pill -->
+    <symbol id="tab" viewBox="0 0 80 22">
+      <rect width="80" height="22" rx="4" fill="#0a0a0e" stroke="#1e1e26"/>
+    </symbol>
+    <!-- Reusable panel box -->
+    <symbol id="panel" viewBox="0 0 200 80">
+      <rect width="200" height="80" rx="6" fill="#121218" stroke="#1e1e26" stroke-width="1"/>
+    </symbol>
+  </defs>
+
+  <!-- ── BACKDROP ────────────────────────────────────────────────── -->
+  <rect width="1344" height="600" fill="#050507"/>
+  <rect width="1344" height="600" fill="url(#grid)" opacity="0.6"/>
+
+  <!-- ── TICKER STRIPS (animated horizontal scroll) ──────────────── -->
+  <g transform="translate(0,8)">
+    <rect x="0" y="0" width="1344" height="18" fill="#050507" stroke="#1e1e26" stroke-width="0.5"/>
+    <g font-size="9" fill="#565656">
+      <text x="0" y="13">
+        <tspan fill="#565656">ETHZAR </tspan><tspan fill="#e8e8ec" font-weight="700">42 876.50 </tspan><tspan fill="#30A46C">▲ +0.42%</tspan>
+        <tspan dx="20" fill="#565656">BTCZAR </tspan><tspan fill="#e8e8ec" font-weight="700">1 124 200 </tspan><tspan fill="#E5484D">▼ -1.12%</tspan>
+        <tspan dx="20" fill="#565656">SOLZAR </tspan><tspan fill="#e8e8ec" font-weight="700">2 950.80 </tspan><tspan fill="#30A46C">▲ +1.97%</tspan>
+        <tspan dx="20" fill="#565656">ESCROW </tspan><tspan fill="#e8e8ec" font-weight="700">R284 900 / R533 000 </tspan><tspan fill="#30A46C">53.4%</tspan>
+        <animateTransform attributeName="transform" type="translate" from="0 0" to="-672 0" dur="40s" repeatCount="indefinite"/>
+      </text>
+    </g>
+  </g>
+
+  <!-- ── TOPBAR ──────────────────────────────────────────────────── -->
+  <g transform="translate(0,32)">
+    <rect x="0" y="0" width="1344" height="44" fill="#050507" stroke="#1e1e26" stroke-width="0.5"/>
+    <!-- Brand mark -->
+    <rect x="16" y="10" width="24" height="24" rx="6" fill="#a3e635"/>
+    <text x="22" y="27" font-size="11" font-weight="800" fill="#050507">◆</text>
+    <text x="50" y="28" font-size="13" font-weight="700" fill="#e8e8ec" letter-spacing="0.5">TRUST UI · v1.0.5</text>
+
+    <!-- 8 surface tab buttons (cycling highlight) -->
+    <g transform="translate(220,11)" font-size="9" font-weight="700" letter-spacing="1">
+      <!-- FORGE -->
+      <g>
+        <rect x="0" y="0" width="58" height="22" rx="4" fill="#0a0a0e" stroke="#1e1e26">
+          <animate attributeName="fill" values="#0a0a0e;#00E5FF;#0a0a0e" dur="16s" begin="0s" repeatCount="indefinite"/>
+          <animate attributeName="stroke" values="#1e1e26;#00E5FF;#1e1e26" dur="16s" begin="0s" repeatCount="indefinite"/>
+        </rect>
+        <text x="29" y="15" text-anchor="middle" fill="#8b8b8b">
+          <animate attributeName="fill" values="#8b8b8b;#050507;#8b8b8b" dur="16s" begin="0s" repeatCount="indefinite"/>
+          FORGE
+        </text>
+      </g>
+      <!-- FIRE -->
+      <g transform="translate(64,0)">
+        <rect x="0" y="0" width="48" height="22" rx="4" fill="#0a0a0e" stroke="#1e1e26">
+          <animate attributeName="fill" values="#0a0a0e;#FFB224;#0a0a0e" dur="16s" begin="2s" repeatCount="indefinite"/>
+          <animate attributeName="stroke" values="#1e1e26;#FFB224;#1e1e26" dur="16s" begin="2s" repeatCount="indefinite"/>
+        </rect>
+        <text x="24" y="15" text-anchor="middle" fill="#8b8b8b">
+          <animate attributeName="fill" values="#8b8b8b;#050507;#8b8b8b" dur="16s" begin="2s" repeatCount="indefinite"/>
+          FIRE
+        </text>
+      </g>
+      <!-- PRESS -->
+      <g transform="translate(118,0)">
+        <rect x="0" y="0" width="54" height="22" rx="4" fill="#0a0a0e" stroke="#1e1e26">
+          <animate attributeName="fill" values="#0a0a0e;#E5484D;#0a0a0e" dur="16s" begin="4s" repeatCount="indefinite"/>
+          <animate attributeName="stroke" values="#1e1e26;#E5484D;#1e1e26" dur="16s" begin="4s" repeatCount="indefinite"/>
+        </rect>
+        <text x="27" y="15" text-anchor="middle" fill="#8b8b8b">
+          <animate attributeName="fill" values="#8b8b8b;#050507;#8b8b8b" dur="16s" begin="4s" repeatCount="indefinite"/>
+          PRESS
+        </text>
+      </g>
+      <!-- BENCH -->
+      <g transform="translate(178,0)">
+        <rect x="0" y="0" width="56" height="22" rx="4" fill="#0a0a0e" stroke="#1e1e26">
+          <animate attributeName="fill" values="#0a0a0e;#E5484D;#0a0a0e" dur="16s" begin="6s" repeatCount="indefinite"/>
+          <animate attributeName="stroke" values="#1e1e26;#E5484D;#1e1e26" dur="16s" begin="6s" repeatCount="indefinite"/>
+        </rect>
+        <text x="28" y="15" text-anchor="middle" fill="#8b8b8b">
+          <animate attributeName="fill" values="#8b8b8b;#050507;#8b8b8b" dur="16s" begin="6s" repeatCount="indefinite"/>
+          BENCH
+        </text>
+      </g>
+      <!-- FIELD -->
+      <g transform="translate(240,0)">
+        <rect x="0" y="0" width="50" height="22" rx="4" fill="#0a0a0e" stroke="#1e1e26">
+          <animate attributeName="fill" values="#0a0a0e;#00E5FF;#0a0a0e" dur="16s" begin="8s" repeatCount="indefinite"/>
+          <animate attributeName="stroke" values="#1e1e26;#00E5FF;#1e1e26" dur="16s" begin="8s" repeatCount="indefinite"/>
+        </rect>
+        <text x="25" y="15" text-anchor="middle" fill="#8b8b8b">
+          <animate attributeName="fill" values="#8b8b8b;#050507;#8b8b8b" dur="16s" begin="8s" repeatCount="indefinite"/>
+          FIELD
+        </text>
+      </g>
+      <!-- SPATIAL (NEW) -->
+      <g transform="translate(296,0)">
+        <rect x="0" y="0" width="68" height="22" rx="4" fill="#0a0a0e" stroke="#1e1e26">
+          <animate attributeName="fill" values="#0a0a0e;#a3e635;#0a0a0e" dur="16s" begin="10s" repeatCount="indefinite"/>
+          <animate attributeName="stroke" values="#1e1e26;#a3e635;#1e1e26" dur="16s" begin="10s" repeatCount="indefinite"/>
+        </rect>
+        <text x="34" y="15" text-anchor="middle" fill="#8b8b8b">
+          <animate attributeName="fill" values="#8b8b8b;#050507;#8b8b8b" dur="16s" begin="10s" repeatCount="indefinite"/>
+          SPATIAL
+        </text>
+        <!-- "new" badge -->
+        <circle cx="68" cy="0" r="6" fill="#a3e635">
+          <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <text x="68" y="3" text-anchor="middle" font-size="6" fill="#050507" font-weight="800">+</text>
+      </g>
+      <!-- SURV (NEW) -->
+      <g transform="translate(370,0)">
+        <rect x="0" y="0" width="50" height="22" rx="4" fill="#0a0a0e" stroke="#1e1e26">
+          <animate attributeName="fill" values="#0a0a0e;#a3e635;#0a0a0e" dur="16s" begin="12s" repeatCount="indefinite"/>
+          <animate attributeName="stroke" values="#1e1e26;#a3e635;#1e1e26" dur="16s" begin="12s" repeatCount="indefinite"/>
+        </rect>
+        <text x="25" y="15" text-anchor="middle" fill="#8b8b8b">
+          <animate attributeName="fill" values="#8b8b8b;#050507;#8b8b8b" dur="16s" begin="12s" repeatCount="indefinite"/>
+          SURV
+        </text>
+        <circle cx="50" cy="0" r="6" fill="#a3e635">
+          <animate attributeName="opacity" values="1;0.3;1" dur="2s" begin="0.5s" repeatCount="indefinite"/>
+        </circle>
+        <text x="50" y="3" text-anchor="middle" font-size="6" fill="#050507" font-weight="800">+</text>
+      </g>
+      <!-- TWIN (NEW) -->
+      <g transform="translate(426,0)">
+        <rect x="0" y="0" width="48" height="22" rx="4" fill="#0a0a0e" stroke="#1e1e26">
+          <animate attributeName="fill" values="#0a0a0e;#a3e635;#0a0a0e" dur="16s" begin="14s" repeatCount="indefinite"/>
+          <animate attributeName="stroke" values="#1e1e26;#a3e635;#1e1e26" dur="16s" begin="14s" repeatCount="indefinite"/>
+        </rect>
+        <text x="24" y="15" text-anchor="middle" fill="#8b8b8b">
+          <animate attributeName="fill" values="#8b8b8b;#050507;#8b8b8b" dur="16s" begin="14s" repeatCount="indefinite"/>
+          TWIN
+        </text>
+        <circle cx="48" cy="0" r="6" fill="#a3e635">
+          <animate attributeName="opacity" values="1;0.3;1" dur="2s" begin="1s" repeatCount="indefinite"/>
+        </circle>
+        <text x="48" y="3" text-anchor="middle" font-size="6" fill="#050507" font-weight="800">+</text>
+      </g>
+    </g>
+
+    <!-- Breadcrumb + state chip -->
+    <g transform="translate(560,17)" font-size="9" font-weight="700" letter-spacing="1">
+      <text x="0" y="0" fill="#565656" text-transform="uppercase">FORGE</text>
+      <text x="48" y="0" fill="#565656">›</text>
+      <text x="58" y="0" fill="#00E5FF">
+        <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;a3e635;a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+        ROOT
+      </text>
+      <!-- state chip pill -->
+      <rect x="100" y="-9" width="56" height="16" rx="8" fill="rgba(0,229,255,0.08)" stroke="#00E5FF">
+        <animate attributeName="stroke" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+        <animate attributeName="fill" values="rgba(0,229,255,0.08);rgba(255,178,36,0.08);rgba(229,72,77,0.08);rgba(229,72,77,0.08);rgba(0,229,255,0.08);rgba(163,230,53,0.08);rgba(163,230,53,0.08);rgba(163,230,53,0.08);rgba(0,229,255,0.08)" dur="16s" repeatCount="indefinite"/>
+      </rect>
+      <circle cx="108" cy="-1" r="2.5" fill="#00E5FF">
+        <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+      </circle>
+      <text x="115" y="3" fill="#00E5FF" font-size="8">
+        <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+        ROOT
+      </text>
+    </g>
+  </g>
+
+  <!-- ── ACTIVE SURFACE PANEL (the main content area that shifts) ─ -->
+  <g transform="translate(0,80)">
+    <!-- proof-strip -->
+    <g transform="translate(16,8)" font-size="9" letter-spacing="0.5">
+      <g>
+        <rect x="0" y="0" width="100" height="18" rx="9" fill="#0a0a0e" stroke="#1e1e26">
+          <animate attributeName="stroke" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+        </rect>
+        <text x="8" y="12" fill="#565656">SHA-256 <tspan fill="#00E5FF" font-weight="700">
+          <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+          e3b0c4…
+        </tspan></text>
+        <animateTransform attributeName="transform" type="translate" from="0 0" to="112 0" dur="16s" begin="0s" repeatCount="indefinite" additive="sum"/>
+      </g>
+    </g>
+
+    <!-- masthead title -->
+    <g transform="translate(16,40)">
+      <text x="0" y="0" font-size="22" font-weight="700" letter-spacing="-0.4" fill="#00E5FF" text-transform="uppercase">
+        <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+        <tspan>FORGE TRUST UI — v1.0.5</tspan>
+      </text>
+      <text x="0" y="18" font-size="11" fill="#8b8b8b">session: dev-tty · secure · audit-mode · read-only</text>
+      <text x="0" y="40" font-size="11" fill="#565656" letter-spacing="1.5" text-transform="uppercase">WE MEASURE TWICE, <tspan fill="#00E5FF" font-style="italic">
+        <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+        THEN DIVE
+      </tspan>.</text>
+    </g>
+
+    <!-- main panel — animated content morph -->
+    <g transform="translate(16,100)">
+      <rect x="0" y="0" width="920" height="340" rx="12" fill="#121218" stroke="#1e1e26" stroke-width="1">
+        <animate attributeName="stroke" values="#1e1e26;#00E5FF;#1e1e26;#1e1e26;#1e1e26;#a3e635;#a3e635;#a3e635;#1e1e26" dur="16s" repeatCount="indefinite" keyTimes="0;0.06;0.18;0.5;0.62;0.68;0.8;0.92;1"/>
+      </rect>
+      <!-- panel label (top-left accent dot) -->
+      <circle cx="20" cy="22" r="3" fill="#00E5FF">
+        <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+      </circle>
+      <text x="32" y="26" font-size="11" font-weight="700" letter-spacing="1" fill="#00E5FF">
+        <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+        [ PANEL — content shifts with the surface ]
+      </text>
+
+      <!-- content blocks: 4 boxes that pulse and rearrange -->
+      <g transform="translate(24,50)">
+        <!-- block 1 -->
+        <rect x="0" y="0" width="220" height="80" rx="8" fill="#0a0a0e" stroke="#1e1e26" stroke-width="1">
+          <animate attributeName="stroke" values="#1e1e26;#00E5FF;#1e1e26;#1e1e26;#1e1e26;#a3e635;#a3e635;#a3e635;#1e1e26" dur="16s" repeatCount="indefinite" keyTimes="0;0.06;0.18;0.5;0.62;0.68;0.8;0.92;1"/>
+        </rect>
+        <text x="10" y="18" font-size="8" fill="#565656" letter-spacing="1">DATA</text>
+        <text x="10" y="40" font-size="14" font-weight="700" fill="#e8e8ec">42 876</text>
+        <text x="10" y="58" font-size="9" fill="#30A46C">▲ +0.42%</text>
+
+        <!-- block 2 -->
+        <g transform="translate(240,0)">
+          <rect x="0" y="0" width="220" height="80" rx="8" fill="#0a0a0e" stroke="#1e1e26" stroke-width="1">
+            <animate attributeName="stroke" values="#1e1e26;#00E5FF;#1e1e26;#1e1e26;#1e1e26;#a3e635;#a3e635;#a3e635;#1e1e26" dur="16s" begin="0.1s" repeatCount="indefinite" keyTimes="0;0.06;0.18;0.5;0.62;0.68;0.8;0.92;1"/>
+          </rect>
+          <text x="10" y="18" font-size="8" fill="#565656" letter-spacing="1">VERIFIED</text>
+          <text x="10" y="40" font-size="14" font-weight="700" fill="#30A46C">✓ PASS</text>
+          <text x="10" y="58" font-size="9" fill="#565656">Ed25519 · SHA-256</text>
+        </g>
+
+        <!-- block 3 -->
+        <g transform="translate(480,0)">
+          <rect x="0" y="0" width="220" height="80" rx="8" fill="#0a0a0e" stroke="#1e1e26" stroke-width="1">
+            <animate attributeName="stroke" values="#1e1e26;#00E5FF;#1e1e26;#1e1e26;#1e1e26;#a3e635;#a3e635;#a3e635;#1e1e26" dur="16s" begin="0.2s" repeatCount="indefinite" keyTimes="0;0.06;0.18;0.5;0.62;0.68;0.8;0.92;1"/>
+          </rect>
+          <text x="10" y="18" font-size="8" fill="#565656" letter-spacing="1">RECEIPTS</text>
+          <text x="10" y="40" font-size="14" font-weight="700" fill="#e8e8ec">2,418</text>
+          <text x="10" y="58" font-size="9" fill="#565656">on-chain anchored</text>
+        </g>
+
+        <!-- block 4 (new: PRICING) -->
+        <g transform="translate(720,0)">
+          <rect x="0" y="0" width="160" height="80" rx="8" fill="#0a0a0e" stroke="#a3e635" stroke-width="1" opacity="0.8">
+            <animate attributeName="opacity" values="0.3;0.3;0.3;0.3;0.3;1;1;1;0.3" dur="16s" repeatCount="indefinite" keyTimes="0;0.06;0.18;0.5;0.62;0.68;0.8;0.92;1"/>
+          </rect>
+          <text x="10" y="18" font-size="8" fill="#a3e635" letter-spacing="1">PRICING</text>
+          <text x="10" y="40" font-size="14" font-weight="700" fill="#a3e635">R25–R9,999</text>
+          <text x="10" y="58" font-size="9" fill="#565656">ZAR only</text>
+        </g>
+
+        <!-- second row: wireframe content -->
+        <g transform="translate(0,100)">
+          <!-- terminal-ish block -->
+          <rect x="0" y="0" width="430" height="180" rx="8" fill="#0a0a0e" stroke="#1e1e26" stroke-width="1">
+            <animate attributeName="stroke" values="#1e1e26;#00E5FF;#1e1e26;#1e1e26;#1e1e26;#a3e635;#a3e635;#a3e635;#1e1e26" dur="16s" begin="0.15s" repeatCount="indefinite" keyTimes="0;0.06;0.18;0.5;0.62;0.68;0.8;0.92;1"/>
+          </rect>
+          <text x="14" y="20" font-size="9" fill="#565656">&gt; <tspan fill="#e8e8ec">verify --path /ingest/report.pdf</tspan></text>
+          <text x="14" y="38" font-size="9" fill="#30A46C">[+]</text>
+          <text x="32" y="38" font-size="9" fill="#565656">root: <tspan fill="#e8e8ec">trust-anchor//forge.root.v1</tspan></text>
+          <text x="14" y="56" font-size="9" fill="#30A46C">[+]</text>
+          <text x="32" y="56" font-size="9" fill="#565656">sha256: <tspan fill="#e8e8ec">e3b0c44298fc1c…b855</tspan></text>
+          <text x="14" y="74" font-size="9" fill="#30A46C">[+]</text>
+          <text x="32" y="74" font-size="9" fill="#565656">signature: <tspan fill="#e8e8ec">ed25519:5c8f9a2d…</tspan></text>
+          <text x="14" y="92" font-size="9" fill="#30A46C">✓</text>
+          <text x="32" y="92" font-size="9" fill="#30A46C" font-weight="700">VERIFIED · 1.06s</text>
+          <text x="14" y="120" font-size="11" fill="#565656">&gt; <tspan fill="#00E5FF">█</tspan>
+            <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/>
+          </text>
+        </g>
+
+        <!-- right block: JSON receipt -->
+        <g transform="translate(450,100)">
+          <rect x="0" y="0" width="430" height="180" rx="8" fill="#0a0a0e" stroke="#1e1e26" stroke-width="1">
+            <animate attributeName="stroke" values="#1e1e26;#00E5FF;#1e1e26;#1e1e26;#1e1e26;#a3e635;#a3e635;#a3e635;#1e1e26" dur="16s" begin="0.25s" repeatCount="indefinite" keyTimes="0;0.06;0.18;0.5;0.62;0.68;0.8;0.92;1"/>
+          </rect>
+          <text x="14" y="22" font-size="9" fill="#FFB224">{</text>
+          <text x="22" y="22" font-size="9" fill="#565656">"<tspan fill="#00E5FF">verdict</tspan>": <tspan fill="#e8e8ec">"TRUSTED"</tspan></text>
+          <text x="22" y="38" font-size="9" fill="#565656">"<tspan fill="#00E5FF">sha256</tspan>": <tspan fill="#e8e8ec">"e3b0c442…b855"</tspan></text>
+          <text x="22" y="54" font-size="9" fill="#565656">"<tspan fill="#00E5FF">signature</tspan>": {</text>
+          <text x="34" y="70" font-size="9" fill="#565656">"<tspan fill="#00E5FF">algo</tspan>": <tspan fill="#e8e8ec">"Ed25519"</tspan>,</text>
+          <text x="34" y="86" font-size="9" fill="#565656">"<tspan fill="#00E5FF">verified</tspan>": <tspan fill="#30A46C" font-weight="700">true</tspan></text>
+          <text x="22" y="102" font-size="9" fill="#565656">},</text>
+          <text x="22" y="118" font-size="9" fill="#565656">"<tspan fill="#00E5FF">duration_ms</tspan>": <tspan fill="#FFB224">1060</tspan></text>
+          <text x="14" y="134" font-size="9" fill="#FFB224">}</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- right sidebar: live status -->
+    <g transform="translate(956,100)">
+      <rect x="0" y="0" width="372" height="340" rx="12" fill="#121218" stroke="#1e1e26" stroke-width="1">
+        <animate attributeName="stroke" values="#1e1e26;#00E5FF;#1e1e26;#1e1e26;#1e1e26;#a3e635;#a3e635;#a3e635;#1e1e26" dur="16s" begin="0.3s" repeatCount="indefinite" keyTimes="0;0.06;0.18;0.5;0.62;0.68;0.8;0.92;1"/>
+      </rect>
+      <circle cx="18" cy="22" r="3" fill="#00E5FF">
+        <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+      </circle>
+      <text x="30" y="26" font-size="11" font-weight="700" letter-spacing="1" fill="#00E5FF">
+        <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+        [ LIVE STATE ]
+      </text>
+
+      <!-- 4 status rows -->
+      <g transform="translate(18,56)" font-size="10">
+        <text x="0" y="0" fill="#565656">CHAIN</text>
+        <text x="60" y="0" fill="#30A46C" font-weight="700" text-anchor="end">3</text>
+        <line x1="68" y1="-4" x2="324" y2="-4" stroke="#1e1e26" stroke-width="0.5"/>
+
+        <text x="0" y="22" fill="#565656">VAULTED</text>
+        <text x="60" y="22" fill="#30A46C" font-weight="700">R 50,000</text>
+        <line x1="68" y1="18" x2="324" y2="18" stroke="#1e1e26" stroke-width="0.5"/>
+
+        <text x="0" y="44" fill="#565656">TXS</text>
+        <text x="60" y="44" fill="#30A46C" font-weight="700">3</text>
+        <line x1="68" y1="40" x2="324" y2="40" stroke="#1e1e26" stroke-width="0.5"/>
+
+        <text x="0" y="66" fill="#565656">UBUNTU SCORE</text>
+        <text x="60" y="66" fill="#30A46C" font-weight="700">801</text>
+        <line x1="68" y1="62" x2="324" y2="62" stroke="#1e1e26" stroke-width="0.5"/>
+
+        <text x="0" y="88" fill="#565656">SYNC</text>
+        <text x="60" y="88" fill="#30A46C" font-weight="700">98.2%</text>
+        <line x1="68" y1="84" x2="324" y2="84" stroke="#1e1e26" stroke-width="0.5"/>
+
+        <text x="0" y="110" fill="#565656">DEVICES</text>
+        <text x="60" y="110" fill="#a3e635" font-weight="700">12</text>
+        <line x1="68" y1="106" x2="324" y2="106" stroke="#1e1e26" stroke-width="0.5"/>
+
+        <text x="0" y="132" fill="#565656">FEEDS</text>
+        <text x="60" y="132" fill="#a3e635" font-weight="700">4 live</text>
+        <line x1="68" y1="128" x2="324" y2="128" stroke="#1e1e26" stroke-width="0.5"/>
+
+        <text x="0" y="154" fill="#565656">HOLOGRAMS</text>
+        <text x="60" y="154" fill="#a3e635" font-weight="700">12</text>
+        <line x1="68" y1="150" x2="324" y2="150" stroke="#1e1e26" stroke-width="0.5"/>
+
+        <text x="0" y="176" fill="#565656">PRICING BAND</text>
+        <text x="60" y="176" fill="#a3e635" font-weight="700">R25–R9,999</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ── BOTTOM STRIP ───────────────────────────────────────────── -->
+  <g transform="translate(16,500)" font-size="10" fill="#565656">
+    <line x1="0" y1="-8" x2="1312" y2="-8" stroke="#1e1e26" stroke-width="0.5"/>
+    <text x="0" y="0">Mode: <tspan fill="#8b8b8b">ROOT · VERIFY</tspan></text>
+    <text x="220" y="0">Source: <tspan fill="#8b8b8b">forge::trust-root::2026-10</tspan></text>
+    <text x="520" y="0">Log: <tspan fill="#8b8b8b">/var/log/forge/verify-20261017.log</tspan></text>
+    <text x="920" y="0">Pricing: <tspan fill="#a3e635" font-weight="700">R25–R9,999 · ZAR ONLY</tspan></text>
+  </g>
+
+  <!-- ── FOOTER SIGNATURE ────────────────────────────────────────── -->
+  <g transform="translate(16,540)" font-size="9" fill="#565656" letter-spacing="0.5">
+    <text x="0" y="0">┌──────────────────────────────────────────────────┐</text>
+    <text x="0" y="12">│  F·S · FLUID STUDIO                              │</text>
+    <text x="0" y="24">│  07Y_IN_PRACTICE · 120+_SHIPPED_BUILDS · 2019    │</text>
+    <text x="0" y="36">│  ZAR ONLY · NO USD                               │</text>
+    <text x="0" y="48">│  DRAFT ≠ DECISION · DRAFT ≠ GRADE · DRAFT ≠ PAYOUT│</text>
+    <text x="0" y="60">└──────────────────────────────────────────────────┘</text>
+    <!-- accent bar at bottom -->
+    <rect x="0" y="70" width="1312" height="2">
+      <animate attributeName="fill" values="#00E5FF;#FFB224;#E5484D;#E5484D;#00E5FF;#a3e635;#a3e635;#a3e635;#00E5FF" dur="16s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- ── ON THE RIGHT: KEYBOARD CHORD HINT ───────────────────────── -->
+  <g transform="translate(1080,540)" font-size="8" fill="#565656" letter-spacing="1">
+    <text x="0" y="0" text-anchor="start">KEYBOARD:</text>
+    <text x="0" y="12">g+l → #/spatial-ledger</text>
+    <text x="0" y="22">g+v → #/surveillance</text>
+    <text x="0" y="32">g+o → #/hologram</text>
+    <text x="0" y="48" fill="#a3e635" font-weight="700">CTRL+K → PALETTE</text>
+  </g>
+
+  <!-- Reduced motion guard: stop animations if user prefers reduced motion
+       (GitHub markdown doesn't support media queries inside SVG <img> embeds,
+       but the SMIL animations loop on a long 16s cycle so they're gentle) -->
+</svg>

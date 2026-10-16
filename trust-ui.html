@@ -1,0 +1,2266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trust UI — v1.0.5 · Coherent · FORGE · FIRE · PRESS · BENCH · FIELD · SPATIAL · SURV · TWIN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;800&family=Oswald:wght@500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/three@0.160.0/build/three.module.js" type="module"></script>
+<style>
+:root{
+  --bg-base:#050507;--bg-surface:#0A0A0E;--bg-panel:#121218;
+  --border:#1E1E26;--text-primary:#F5F2ED;--text-muted:#8B8B8B;--text-dim:#565656;
+  --pass-green:#30A46C;--fail-red:#E5484D;
+  --signal-amber:#FFB224;--signal-blue:#0090FF;--signal-cyan:#00E5FF;
+  --riso-red:#E5484D;--ochre:#CC7722;--bridge-bg:#11110F;--bridge-surface:#1A1A18;
+  --bridge-line:rgba(255,255,255,0.08);--bridge-ochre:#CC7722;
+  --bone:#F5F0E8;--ink:#0D0D0D;--card-border:rgba(13,13,13,0.1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important}
+  html{scroll-behavior:auto}.ticker{animation:none !important;transform:none !important}
+}
+body{
+  background:var(--bg-base);color:var(--text-primary);
+  font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;min-height:100dvh;
+}
+.mono{font-family:'JetBrains Mono',Menlo,monospace}
+.num{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+.container{max-width:1440px;margin:0 auto;padding:0 16px}
+@media(min-width:768px){.container{padding:0 24px}}
+@media(min-width:1024px){.container{padding:0 32px}}
+
+/* ═══ TICKERS — the constant frame ═══ */
+.ticker-wrap{background:var(--bg-base);border-bottom:1px solid var(--border);overflow:hidden;padding:6px 0}
+.ticker{display:flex;gap:40px;white-space:nowrap;animation:scroll 40s linear infinite;width:max-content;will-change:transform}
+.ticker-wrap:hover .ticker{animation-play-state:paused}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.05em;display:inline-flex;gap:8px;align-items:baseline}
+.tk .label{color:var(--text-dim)}.tk .pair{color:var(--text-muted);font-weight:700}
+.tk .price{color:var(--text-primary)}.tk .up{color:var(--pass-green)}.tk .down{color:var(--fail-red)}.tk .sim{color:var(--signal-amber)}
+
+/* ═══ TOPBAR — with state breadcrumb ═══ */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(5,5,7,0.94);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);padding:10px 16px;
+  display:flex;flex-direction:column;gap:10px;
+}
+@media(min-width:1024px){.topbar{padding:0 32px;height:64px;flex-direction:row;align-items:center;justify-content:space-between}}
+.topbar-inner{display:flex;flex-direction:column;gap:10px;width:100%}
+@media(min-width:1024px){.topbar-inner{flex-direction:row;align-items:center;justify-content:space-between}}
+.brand{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;letter-spacing:-0.02em}
+.brand-mark{width:26px;height:26px;background:var(--signal-cyan);color:var(--bg-base);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0}
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,0.04);padding:4px;border-radius:10px;width:100%;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+@media(min-width:1024px){.tabs{width:auto;overflow:visible}}
+.tab{flex:1 0 auto;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:8px 12px;border:none;background:transparent;color:var(--text-muted);border-radius:7px;cursor:pointer;transition:color 0.15s,background 0.15s;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.tab:hover{color:var(--text-primary)}.tab.active{background:var(--text-primary);color:var(--bg-base)}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)}
+.breadcrumb .crumb{color:var(--text-muted)}
+.breadcrumb .crumb.active{color:var(--surface-accent,var(--signal-cyan));font-weight:700}
+.breadcrumb .sep{color:var(--text-dim);opacity:0.5}
+.state-chip{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid var(--surface-accent,var(--signal-cyan));color:var(--surface-accent,var(--signal-cyan));background:color-mix(in srgb, var(--surface-accent,var(--signal-cyan)) 8%, transparent);transition:all 400ms cubic-bezier(0.65,0,0.35,1)}
+
+/* ═══ PROOF-STRIP (mobile 2-sec test) ═══ */
+.proof-strip{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.proof-strip::-webkit-scrollbar{display:none}
+.proof-chip{flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.5px;color:var(--text-muted);border:1px solid var(--surface-border,var(--border));border-radius:20px;padding:5px 12px;white-space:nowrap;background:var(--bg-surface);transition:border-color 400ms cubic-bezier(0.65,0,0.35,1)}
+.proof-chip b{color:var(--surface-accent,var(--signal-cyan));font-weight:700;transition:color 400ms cubic-bezier(0.65,0,0.35,1)}
+
+/* ═══ VIEWS — with surface variables ═══ */
+.view{
+  display:none;
+  --surface-accent:var(--signal-cyan);
+  --surface-bg:var(--bg-base);
+  --surface-border:var(--border);
+  --surface-glow:rgba(0,229,255,0.04);
+  background:var(--surface-bg);
+  color:var(--text-primary);
+  transition:background-color 400ms cubic-bezier(0.65,0,0.35,1),color 400ms cubic-bezier(0.65,0,0.35,1);
+  min-height:calc(100dvh - 120px);
+}
+.view.active{display:block;animation:surfaceIn 400ms cubic-bezier(0.16,1,0.3,1)}
+@keyframes surfaceIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* State palettes */
+.view[data-state="root"]{--surface-accent:#00E5FF;--surface-bg:#050507;--surface-border:#1E1E26;--surface-glow:rgba(0,229,255,0.04)}
+.view[data-state="bridge"]{--surface-accent:#CC7722;--surface-bg:#11110F;--surface-border:rgba(255,255,255,0.08);--surface-glow:rgba(204,119,34,0.05)}
+.view[data-state="market"]{--surface-accent:#FFB224;--surface-bg:#050507;--surface-border:#1E1E26;--surface-glow:rgba(255,178,36,0.03)}
+.view[data-state="pools"]{--surface-accent:#CC7722;--surface-bg:#FAFAF7;--surface-border:rgba(13,13,13,0.1);--surface-glow:rgba(204,119,34,0.05);color:#0D0D0D}
+.view[data-state="press"]{--surface-accent:#E5484D;--surface-bg:#050507;--surface-border:#1E1E26;--surface-glow:rgba(229,72,77,0.04)}
+.view[data-state="license"]{--surface-accent:#E5484D;--surface-bg:#050507;--surface-border:#1E1E26;--surface-glow:rgba(229,72,77,0.04)}
+.view[data-state="author"]{--surface-accent:#E5484D;--surface-bg:#050507;--surface-border:#1E1E26;--surface-glow:rgba(229,72,77,0.03)}
+.view[data-state="resilience"]{--surface-accent:#00E5FF;--surface-bg:#050507;--surface-border:#1E1E26;--surface-glow:rgba(0,229,255,0.04)}
+.view[data-state="simulation"]{--surface-accent:#FFB224;--surface-bg:#050507;--surface-border:rgba(255,178,36,0.2);--surface-glow:rgba(255,178,36,0.05)}
+/* VVU brand cluster — lime + bone green-and-white HUD */
+.view[data-state="spatial"]{--surface-accent:#a3e635;--surface-bg:#050507;--surface-border:#1E1E26;--surface-glow:rgba(163,230,53,0.05)}
+.view[data-state="surveillance"]{--surface-accent:#a3e635;--surface-bg:#050507;--surface-border:#1E1E26;--surface-glow:rgba(163,230,53,0.04)}
+.view[data-state="twin"]{--surface-accent:#a3e635;--surface-bg:#050507;--surface-border:#1E1E26;--surface-glow:rgba(163,230,53,0.06)}
+
+/* ═══ MASTHEAD — every view has one ═══ */
+.masthead{padding:22px 0 18px;border-bottom:1px solid var(--surface-border);transition:border-color 400ms cubic-bezier(0.65,0,0.35,1)}
+.masthead-row{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.masthead-title{font-family:'JetBrains Mono',monospace;font-size:clamp(17px,4.5vw,24px);font-weight:700;color:var(--surface-accent);letter-spacing:-0.4px;text-transform:uppercase;line-height:1.2;transition:color 400ms cubic-bezier(0.65,0,0.35,1)}
+.masthead-sub{font-family:'JetBrains Mono',monospace;font-size:clamp(11px,3vw,13px);color:var(--text-muted);margin-top:6px;letter-spacing:0.3px}
+.masthead-motto{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:10px;letter-spacing:1.5px;text-transform:uppercase}
+.masthead-motto em{color:var(--surface-accent);font-style:normal;transition:color 400ms cubic-bezier(0.65,0,0.35,1)}
+.masthead-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* ═══ MODE TOGGLE — every multi-state view has one ═══ */
+.mode-toggle{display:inline-flex;gap:2px;background:color-mix(in srgb, var(--surface-accent) 6%, transparent);padding:3px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;transition:background 400ms cubic-bezier(0.65,0,0.35,1);border:1px solid color-mix(in srgb, var(--surface-accent) 20%, transparent)}
+.mode-toggle button{padding:6px 14px;border:none;background:transparent;color:var(--text-muted);border-radius:6px;cursor:pointer;font-family:inherit;font-size:inherit;font-weight:inherit;letter-spacing:inherit;transition:all 300ms cubic-bezier(0.65,0,0.35,1);text-transform:inherit}
+.mode-toggle button:hover{color:var(--text-primary)}
+.mode-toggle button.active{background:var(--surface-accent);color:var(--surface-bg)}
+.view[data-state="pools"] .mode-toggle{background:rgba(13,13,13,0.05);border-color:rgba(13,13,13,0.1)}
+.view[data-state="pools"] .mode-toggle button{color:rgba(13,13,13,0.5)}
+.view[data-state="pools"] .mode-toggle button.active{background:var(--ink);color:var(--bone)}
+
+/* ═══ PANEL — invariant shape ═══ */
+.panel{background:var(--bg-panel);border:1px solid var(--surface-border);border-radius:12px;padding:16px;margin:16px 0;transition:border-color 400ms cubic-bezier(0.65,0,0.35,1),box-shadow 400ms cubic-bezier(0.65,0,0.35,1)}
+@media(min-width:1024px){.panel{padding:22px;box-shadow:0 0 40px var(--surface-glow)}}
+.view[data-state="pools"] .panel{background:var(--bg-panel);color:var(--text-primary)}
+.panel-label{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--surface-accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;transition:color 400ms cubic-bezier(0.65,0,0.35,1)}
+.panel-label::before{content:"";width:8px;height:8px;background:var(--surface-accent);border-radius:1px;flex-shrink:0;transition:background 400ms cubic-bezier(0.65,0,0.35,1)}
+
+/* ═══ BOTTOM STRIP — reconciliation bar ═══ */
+.bottom-strip{border-top:1px solid var(--surface-border);padding:14px 0 22px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;line-height:1.9;transition:border-color 400ms cubic-bezier(0.65,0,0.35,1)}
+.bottom-strip b{color:var(--text-muted)}
+.bottom-strip .pos{color:var(--pass-green)}.bottom-strip .neg{color:var(--fail-red)}
+.view[data-state="pools"] .bottom-strip{border-color:rgba(13,13,13,0.1);color:rgba(13,13,13,0.5)}
+.view[data-state="pools"] .bottom-strip b{color:rgba(13,13,13,0.8)}
+
+/* ═══ TTY ═══ */
+.tty{font-family:'JetBrains Mono',monospace;font-size:clamp(11px,2.9vw,13px);line-height:1.85;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+.tty .prompt{color:var(--text-dim)}.tty .plus{color:var(--pass-green);font-weight:700}
+.tty .path{color:var(--signal-blue)}.tty .hash{color:var(--text-muted)}
+.tty .key{color:var(--signal-amber)}.tty .val{color:var(--text-primary)}.tty .dim{color:var(--text-dim)}
+.tty .mint{color:var(--bridge-ochre);font-weight:700}
+
+/* ═══ BADGES ═══ */
+.badge-row{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 4px}
+.badge{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.5px;padding:7px 14px;border-radius:6px;display:inline-flex;align-items:center;gap:7px;text-transform:uppercase}
+.badge-pass,.badge-clean{background:rgba(48,164,108,0.12);color:var(--pass-green);border:1px solid rgba(48,164,108,0.4)}
+.badge-trusted{background:rgba(48,164,108,0.15);color:var(--pass-green);border:1px solid var(--pass-green);font-size:13px;padding:9px 18px}
+.badge-amber{background:rgba(255,178,36,0.08);color:var(--signal-amber);border:1px solid rgba(255,178,36,0.45);font-size:10px;letter-spacing:0.8px}
+
+/* ═══ JSON ═══ */
+.json-block{font-family:'JetBrains Mono',monospace;font-size:clamp(11px,2.8vw,13px);line-height:1.8;background:var(--bg-base);border:1px solid var(--surface-border);border-radius:8px;padding:14px;overflow-x:auto;white-space:pre;color:var(--text-muted);transition:border-color 400ms cubic-bezier(0.65,0,0.35,1)}
+.json-block .brace{color:var(--signal-amber)}.json-block .jkey{color:var(--surface-accent)}
+.json-block .jval{color:var(--text-primary)}.json-block .jbool{color:var(--pass-green);font-weight:700}.json-block .jnum{color:var(--signal-amber)}
+
+/* ═══ VERDICT / CURSOR ═══ */
+.verdict-line{font-family:'JetBrains Mono',monospace;font-size:clamp(13px,3.4vw,16px);font-weight:700;color:var(--pass-green);margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cursor{display:inline-block;width:9px;height:17px;background:var(--surface-accent);vertical-align:middle;animation:blink 1.06s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ═══ FIRE panels ═══ */
+.fire-grid{display:grid;grid-template-columns:1fr;gap:16px;padding:20px 0}
+@media(min-width:1024px){.fire-grid{grid-template-columns:280px 1fr 300px;gap:20px}}
+.pool-row{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border:1px solid var(--surface-border);border-radius:8px;margin-bottom:8px;background:var(--bg-surface);transition:border-color 400ms cubic-bezier(0.65,0,0.35,1)}
+.pool-pair{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700}
+.pool-pair .dot-up{color:var(--pass-green)}.pool-pair .dot-down{color:var(--fail-red)}
+.pool-chg{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700}
+.chg-up{color:var(--pass-green)}.chg-down{color:var(--fail-red)}
+.pool-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.8}
+.pool-meta b{color:var(--text-muted)}
+.chart-box{background:var(--bg-surface);border:1px solid var(--surface-border);border-radius:8px;padding:12px;position:relative}
+.chart-box svg{width:100%;height:auto;display:block}
+.curve-path{stroke:var(--pass-green);stroke-width:2;fill:none;stroke-linecap:round;stroke-dasharray:600;stroke-dashoffset:600;animation:drawCurve 800ms cubic-bezier(0.16,1,0.3,1) forwards}
+@keyframes drawCurve{to{stroke-dashoffset:0}}
+.chart-now{position:absolute;top:8px;right:10px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--pass-green);background:rgba(48,164,108,0.12);border:1px solid rgba(48,164,108,0.4);padding:4px 10px;border-radius:6px}
+.chart-labels{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);padding:6px 4px 0}
+.funding-trend{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--pass-green);margin-top:10px;font-weight:700}
+.heat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+.heat-cell{border-radius:6px;height:52px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text-primary);border:1px solid var(--surface-border)}
+.heat-labels{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:8px}
+.heat-bar{height:6px;border-radius:3px;margin-top:8px;background:linear-gradient(90deg,#1a3a8a,#2a7a4a,#c8a020,#c04020)}
+.escrow-big{font-family:'JetBrains Mono',monospace;font-size:clamp(24px,6vw,32px);font-weight:700;line-height:1.25;letter-spacing:-0.5px}
+.escrow-big .sep{color:var(--text-dim);font-weight:400}
+.progress-track{height:8px;background:var(--bg-surface);border:1px solid var(--surface-border);border-radius:4px;overflow:hidden;margin:14px 0 10px}
+.progress-fill{height:100%;background:var(--pass-green);border-radius:4px;animation:fillBar 800ms cubic-bezier(0.16,1,0.3,1) forwards;transform-origin:left}
+@keyframes fillBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.funded-line{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--pass-green);font-weight:700}
+.kv{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);line-height:2;margin-top:12px}
+.kv .k{color:var(--text-dim)}.kv .contract{color:var(--signal-amber);word-break:break-all}
+.tx-hash{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--signal-cyan);word-break:break-all;background:var(--bg-base);border:1px solid var(--surface-border);border-radius:6px;padding:8px 10px;margin-top:6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:border-color 200ms}
+.tx-hash:hover{border-color:var(--signal-cyan)}
+.tx-hash .copy{color:var(--text-dim);font-size:10px;flex-shrink:0}
+.status-pill{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--pass-green);background:rgba(48,164,108,0.1);border:1px solid rgba(48,164,108,0.4);border-radius:6px;padding:6px 12px;margin-top:10px}
+.status-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--pass-green)}
+
+/* ═══ POOLS warm mode ═══ */
+.view[data-state="pools"] .masthead{border-color:rgba(13,13,13,0.1)}
+.view[data-state="pools"] .masthead-title{color:var(--ink)}
+.view[data-state="pools"] .masthead-sub,.view[data-state="pools"] .masthead-motto{color:rgba(13,13,13,0.55)}
+.view[data-state="pools"] .masthead-motto em{color:var(--ochre)}
+.view[data-state="pools"] .proof-chip{border-color:rgba(13,13,13,0.1);background:rgba(13,13,13,0.03);color:rgba(13,13,13,0.6)}
+.view[data-state="pools"] .proof-chip b{color:var(--ochre)}
+.view[data-state="pools"] .panel-label{color:var(--ochre)}
+.view[data-state="pools"] .panel-label::before{background:var(--ochre)}
+.view[data-state="pools"] .kv{color:rgba(255,255,255,0.55)}
+.pool-hero{padding:32px 0 24px}
+.pool-hero h2{font-family:'Oswald',sans-serif;font-size:clamp(28px,7vw,48px);font-weight:700;line-height:1.05;letter-spacing:-0.02em;text-transform:uppercase;color:var(--ink);margin-bottom:10px}
+.view[data-state="pools"] .pool-hero h2{color:var(--ink)}
+.pool-hero h2 .amber{color:var(--signal-amber)}
+.pool-hero p{font-size:15px;color:var(--text-muted);max-width:520px;line-height:1.7;margin-bottom:24px}
+.pool-vaulted{font-family:'JetBrains Mono',monospace;font-size:clamp(32px,8vw,48px);font-weight:800;letter-spacing:-0.03em;line-height:1.05;color:var(--text-primary)}
+.pool-overline{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-top:6px}
+.pool-progress{height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;margin-top:18px}
+.pool-progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--signal-cyan),var(--pass-green));transition:width 0.6s cubic-bezier(0.16,1,0.3,1)}
+.contribute-btn{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.8px;padding:9px 16px;border-radius:8px;background:transparent;border:1px solid var(--surface-border);color:var(--text-primary);cursor:pointer;transition:all 0.15s;text-transform:uppercase;margin-right:8px;margin-bottom:8px}
+.contribute-btn:hover{background:var(--text-primary);color:var(--bg-base);border-color:var(--text-primary)}
+.receipts-list{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.9;margin-top:12px;color:var(--text-muted);max-height:180px;overflow-y:auto}
+.receipts-list b{color:var(--text-primary)}
+.receipts-list .ok{color:var(--pass-green)}
+.steps-row{display:grid;grid-template-columns:1fr;gap:1px;background:var(--surface-border);border-radius:12px;overflow:hidden;margin-top:16px}
+@media(min-width:640px){.steps-row{grid-template-columns:repeat(3,1fr)}}
+.step-card{background:var(--bg-panel);padding:22px 18px}
+.step-num{font-family:'Bebas Neue','Oswald',sans-serif;font-size:32px;line-height:1;color:var(--surface-accent);letter-spacing:-0.02em;margin-bottom:8px}
+.step-title{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px}
+.step-desc{font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:12px}
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 9px;border-radius:4px;letter-spacing:0.08em;background:color-mix(in srgb, var(--surface-accent) 12%, transparent);color:var(--surface-accent);display:inline-block;text-transform:uppercase}
+
+/* ═══ PRESS ═══ */
+.press-nav{border-bottom:1px solid var(--surface-border);padding:14px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.press-logo{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;display:flex;align-items:center;gap:8px;text-transform:uppercase}
+.press-logo .mark{width:24px;height:24px;border:2px solid var(--surface-accent);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--surface-accent)}
+.press-cta{display:flex;gap:8px}
+.press-btn{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.5px;padding:8px 16px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all 200ms cubic-bezier(0.16,1,0.3,1);border:1px solid transparent;text-transform:uppercase}
+.press-btn-ghost{border-color:var(--surface-border);color:var(--text-primary);background:transparent}
+.press-btn-ghost:hover{border-color:var(--text-muted)}
+.press-btn-red{background:var(--surface-accent);color:#fff}
+.press-btn-red:hover{filter:brightness(0.9)}
+.press-hero{padding:32px 0 28px;display:grid;grid-template-columns:1fr;gap:28px;align-items:start}
+@media(min-width:1024px){.press-hero{grid-template-columns:1.1fr 1fr;gap:48px;padding:56px 0 48px}}
+.press-hero h1{font-family:'Oswald',sans-serif;font-size:clamp(40px,10vw,80px);font-weight:700;line-height:1.0;letter-spacing:-1px;text-transform:uppercase}
+.press-hero-sub{font-size:clamp(15px,4vw,17px);color:var(--text-muted);margin-top:18px;max-width:480px;line-height:1.6}
+.press-motto{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-top:14px}
+.press-motto em{color:var(--surface-accent);font-style:normal}
+.press-badges{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.press-tb{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--surface-accent);display:inline-flex;align-items:center;gap:5px}
+.press-vs-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;align-items:center}
+.press-vs-chip{display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb, var(--surface-accent) 12%, transparent);border:1px solid color-mix(in srgb, var(--surface-accent) 45%, transparent);border-radius:20px;padding:6px 14px 6px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--text-primary);letter-spacing:0.5px}
+.press-vs-icon{width:22px;height:22px;border-radius:50%;background:var(--surface-accent);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;flex-shrink:0}
+.press-sha-chip{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);border:1px solid var(--surface-border);border-radius:20px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;background:var(--bg-surface)}
+.press-sha-chip .hash{color:var(--surface-accent)}
+.press-video-panel{background:var(--bg-panel);border:1px solid var(--surface-border);border-radius:12px;overflow:hidden}
+.press-draft-flag{padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.8px;color:var(--signal-amber);background:rgba(255,178,36,0.06);border-bottom:1px solid var(--surface-border);text-transform:uppercase}
+.press-video-frame{position:relative;aspect-ratio:16/9;background:#000;overflow:hidden}
+.press-video-frame video{width:100%;height:100%;object-fit:cover;display:block}
+.press-video-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:linear-gradient(rgba(0,0,0,0.7),transparent);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text-muted);text-transform:uppercase}
+.press-live{display:inline-flex;align-items:center;gap:5px;color:var(--surface-accent);font-weight:700}
+.press-live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--surface-accent);animation:pulse 2s ease-in-out infinite}
+.press-video-bottom{position:absolute;bottom:0;left:0;right:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,0.8));display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)}
+.press-video-progress{position:absolute;bottom:0;left:0;height:3px;background:var(--surface-accent);width:8.6%}
+.press-source-note{padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);background:var(--bg-surface)}
+.press-review{background:var(--bg-panel);border:1px solid var(--surface-border);border-radius:12px;padding:18px;margin-top:16px;animation:fadeUp 800ms cubic-bezier(0.16,1,0.3,1) forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.press-review-head{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--pass-green);text-transform:uppercase;margin-bottom:12px}
+.press-review-head::before{content:"✓";width:18px;height:18px;border:1.5px solid var(--pass-green);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.press-review-body{font-size:14px;line-height:1.7;font-style:italic}
+.press-review-meta{margin-top:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.press-stars{color:var(--signal-amber);font-size:16px;letter-spacing:2px}
+.press-trust-score{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted)}
+.press-trust-score b{color:var(--text-primary)}
+.press-trust-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:6px}
+.press-pricing{border:1px solid var(--surface-border);border-radius:12px;background:var(--bg-panel);padding:24px 20px;margin:32px 0}
+.press-pricing-head{font-family:'Oswald',sans-serif;font-size:clamp(20px,5vw,28px);font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.press-pricing-sub{font-size:13px;color:var(--text-muted);margin-top:4px}
+.press-tiers{display:grid;grid-template-columns:1fr;gap:12px;margin-top:20px}
+@media(min-width:640px){.press-tiers{grid-template-columns:repeat(3,1fr)}}
+.press-tier{border:1px solid var(--surface-border);border-radius:10px;padding:18px 16px;background:var(--bg-surface);transition:border-color 200ms}
+.press-tier.featured{border-color:var(--surface-accent)}
+.press-tier-name{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase}
+.press-tier-price{font-family:'Oswald',sans-serif;font-size:clamp(28px,7vw,36px);font-weight:700;margin:8px 0 4px}
+.press-tier-desc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)}
+
+/* ═══ BENCH ═══ */
+.bench-spread{display:grid;grid-template-columns:1fr;gap:28px;padding:32px 0}
+@media(min-width:1024px){.bench-spread{grid-template-columns:1.1fr 1fr;gap:56px;padding:48px 0;align-items:start}}
+.bench-display{font-family:'Bebas Neue','Oswald',sans-serif;font-size:clamp(48px,12vw,110px);line-height:0.88;letter-spacing:-1px;text-transform:uppercase;margin-bottom:8px}
+.bench-display .accent{color:var(--surface-accent);display:block}
+.bench-display .outline{-webkit-text-stroke:1.5px var(--text-primary);color:transparent}
+.bench-sub{font-family:'Oswald',sans-serif;font-size:clamp(14px,3.5vw,18px);font-weight:400;color:var(--text-muted);line-height:1.5;max-width:560px;margin-top:18px}
+.bench-card-wrap{position:relative}
+.bench-card-wrap::before{content:"";position:absolute;top:-8px;left:-8px;width:16px;height:16px;border-left:2px solid var(--surface-accent);border-top:2px solid var(--surface-accent)}
+.bench-card-wrap::after{content:"";position:absolute;bottom:-8px;right:-8px;width:16px;height:16px;border-right:2px solid var(--surface-accent);border-bottom:2px solid var(--surface-accent)}
+.bench-card{background:var(--bone);color:var(--ink);border-radius:8px;overflow:hidden;box-shadow:0 0 60px color-mix(in srgb, var(--surface-accent) 8%, transparent);position:relative}
+.bench-card::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px, rgba(13,13,13,0.08) 1px, transparent 0);background-size:5px 5px;pointer-events:none;opacity:0.6}
+.bench-card-head{border-bottom:2px solid var(--ink);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:relative}
+.bench-card-title{font-family:'Bebas Neue','Oswald',sans-serif;font-size:20px;letter-spacing:1px;text-transform:uppercase}
+.bench-card-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:var(--ink);color:var(--bone);padding:4px 10px;border-radius:4px}
+.bench-card-body{padding:18px;position:relative}
+.bench-row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px dashed rgba(13,13,13,0.15);font-family:'JetBrains Mono',monospace}
+.bench-row:last-of-type{border-bottom:none}
+.bench-row .k{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(13,13,13,0.55);flex-shrink:0}
+.bench-row .v{font-size:12px;font-weight:500;text-align:right;word-break:break-all}
+.bench-status{margin-top:14px;background:var(--ink);color:var(--bone);border-radius:6px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.bench-status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pass-green);box-shadow:0 0 12px var(--pass-green);animation:pulseStatus 3s ease-in-out infinite;flex-shrink:0}
+@keyframes pulseStatus{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(0.85)}}
+.bench-qr{margin-top:18px;display:flex;gap:16px;align-items:center;padding:14px;border:1px solid rgba(13,13,13,0.15);border-radius:6px;background:rgba(13,13,13,0.02)}
+.bench-qr-svg{width:84px;height:84px;flex-shrink:0;background:#fff;border:1px solid var(--ink);border-radius:4px;padding:4px}
+.bench-qr-meta{font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.9;color:rgba(13,13,13,0.6);word-break:break-all}
+.bench-qr-meta b{display:block;color:var(--ink);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.bench-qr-meta .url{color:var(--surface-accent);font-weight:700}
+.bench-checklist{margin-top:22px;border-top:1px solid rgba(13,13,13,0.15);padding-top:18px}
+.bench-checklist-h{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(13,13,13,0.5);margin-bottom:12px}
+.bench-checklist ul{list-style:none;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2.2;color:var(--ink)}
+.bench-checklist li{display:flex;gap:10px;align-items:baseline}
+.bench-checklist li::before{content:"✓";color:var(--pass-green);font-weight:700;flex-shrink:0}
+.bench-checklist li .meta{color:rgba(13,13,13,0.5);font-size:10px;margin-left:auto;flex-shrink:0}
+
+/* BENCH AUTHOR */
+.bench-author-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+@media(min-width:768px){.bench-author-grid{grid-template-columns:1fr 1fr}}
+.bench-author-panel{background:var(--bg-panel);border:1px solid var(--surface-border);border-radius:10px;padding:16px}
+.bench-author-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px}
+.bench-author-input{width:100%;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg-base);border:1px solid var(--surface-border);border-radius:6px;padding:10px 12px;color:var(--text-primary);outline:none;transition:border-color 150ms}
+.bench-author-input:focus{border-color:var(--surface-accent)}
+.bench-author-output{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg-base);border:1px solid var(--surface-border);border-radius:6px;padding:14px;white-space:pre-wrap;word-break:break-all;color:var(--text-muted);max-height:280px;overflow:auto;line-height:1.7}
+.bench-author-output .k{color:var(--signal-cyan)}
+.bench-author-output .v{color:var(--text-primary)}
+.bench-author-output .r{color:var(--surface-accent)}
+.bench-author-output .g{color:var(--pass-green)}
+.cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.cap-toggle{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--surface-border);border-radius:8px;background:var(--bg-base);cursor:pointer;transition:all 150ms;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)}
+.cap-toggle:hover{border-color:var(--text-muted)}
+.cap-toggle.on{border-color:var(--surface-accent);background:color-mix(in srgb, var(--surface-accent) 10%, transparent);color:var(--surface-accent)}
+.cap-toggle .box{width:12px;height:12px;border:1px solid var(--surface-border);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+.cap-toggle.on .box{background:var(--surface-accent);border-color:var(--surface-accent);color:var(--bg-base)}
+.bench-bp{margin-top:20px;border-top:1px solid var(--surface-border);padding-top:18px}
+.bench-bp-h{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+.bench-bp-grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:768px){.bench-bp-grid{grid-template-columns:1fr 1fr}}
+.bench-bp-card{border:1px solid var(--surface-border);border-radius:8px;padding:12px 14px;background:var(--bg-panel)}
+.bench-bp-card h4{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-primary);margin-bottom:6px}
+.bench-bp-card p,.bench-bp-card ul{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.8;color:var(--text-muted)}
+.bench-bp-card ul{list-style:none}
+.bench-bp-card li{padding-left:12px;position:relative}
+.bench-bp-card li::before{content:"—";position:absolute;left:0;color:var(--surface-accent)}
+.bench-install{margin-top:18px;border:1px solid var(--surface-border);border-radius:10px;overflow:hidden}
+.bench-install-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg-surface);border-bottom:1px solid var(--surface-border);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim)}
+.bench-install-copy{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:4px;background:var(--surface-accent);color:var(--bg-base);border:none;cursor:pointer}
+.bench-install-copy:hover{filter:brightness(0.9)}
+.bench-install-pre{padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.9;color:var(--text-muted);background:var(--bg-base);white-space:pre-wrap;word-break:break-all;max-height:240px;overflow:auto}
+.bench-install-pre .c{color:var(--text-dim)}
+.bench-install-pre .k{color:var(--signal-cyan)}
+
+/* ═══ FIELD ═══ */
+.field-sync{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--pass-green);background:rgba(48,164,108,0.1);border:1px solid rgba(48,164,108,0.4);border-radius:20px;padding:5px 12px;white-space:nowrap}
+.field-sync::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--pass-green);animation:pulse 2s infinite}
+.field-tiers{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+.field-tier{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:6px 12px;border-radius:6px;border:1px solid var(--surface-border);background:var(--bg-surface);color:var(--text-muted)}
+.field-tier b{color:var(--text-primary);font-weight:700}
+.field-tier .ok{color:var(--pass-green)}
+.field-grid{display:grid;grid-template-columns:1fr;gap:16px;padding:20px 0}
+@media(min-width:1024px){.field-grid{grid-template-columns:1fr 1.2fr;gap:20px}}
+.field-logs{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:2;color:var(--text-muted);max-height:280px;overflow-y:auto}
+.field-logs b{color:var(--text-primary);font-weight:500}
+.field-logs .ok{color:var(--pass-green)}.field-logs .warn{color:var(--signal-amber)}
+.field-depth{margin-top:18px;padding-top:14px;border-top:1px solid var(--surface-border);display:flex;gap:16px;align-items:center}
+.field-depth-gauge{width:44px;height:140px;border-radius:6px;background:linear-gradient(180deg,var(--signal-cyan) 0%,var(--pass-green) 55%,#0d5c33 100%);position:relative;flex-shrink:0;border:1px solid var(--surface-border)}
+.field-depth-gauge::after{content:"";position:absolute;left:0;right:0;bottom:60%;height:2px;background:var(--text-primary)}
+.field-depth-meta{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:2;color:var(--text-muted)}
+.field-depth-meta b{color:var(--text-primary)}
+.field-frag-wall{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.field-frag{aspect-ratio:1;border-radius:3px;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.15);opacity:0;transform:scale(0.9);animation:fragIn 400ms cubic-bezier(0.16,1,0.3,1) forwards}
+@keyframes fragIn{to{opacity:1;transform:scale(1)}}
+.field-frag.v2{background:rgba(0,144,255,0.2)}
+.field-frag.v3{background:rgba(48,164,108,0.22)}
+.field-frag.v4{background:rgba(255,178,36,0.2)}
+.field-frag.v5{background:rgba(229,72,77,0.18)}
+.field-checksum{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:12px;letter-spacing:0.5px}
+.field-checksum b{color:var(--surface-accent)}
+
+/* FIELD SIMULATION */
+.sim-layer{border:1px solid color-mix(in srgb, var(--surface-accent) 25%, transparent);border-radius:12px;background:linear-gradient(180deg,color-mix(in srgb, var(--surface-accent) 3%, transparent),transparent 60%);padding:18px;transition:border-color 400ms cubic-bezier(0.65,0,0.35,1),background 400ms cubic-bezier(0.65,0,0.35,1)}
+.sim-layer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.sim-layer-title{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--surface-accent);display:flex;align-items:center;gap:8px}
+.sim-layer-title::before{content:"";width:8px;height:8px;background:var(--surface-accent);border-radius:1px}
+.sim-layer-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:6px;letter-spacing:0.5px}
+.sim-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--signal-amber);background:rgba(255,178,36,0.1);border:1px solid rgba(255,178,36,0.4);padding:4px 10px;border-radius:20px;white-space:nowrap}
+.sim-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--surface-border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+@media(min-width:640px){.sim-stats{grid-template-columns:repeat(5,1fr)}}
+.sim-stat{background:var(--bg-base);padding:12px 8px;text-align:center}
+.sim-stat-num{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--surface-accent);letter-spacing:-0.02em}
+.sim-stat-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.sim-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.sim-btn{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:9px 16px;border-radius:8px;cursor:pointer;border:1px solid var(--surface-border);background:var(--bg-surface);color:var(--text-primary);transition:all 0.15s}
+.sim-btn:hover{border-color:var(--surface-accent);color:var(--surface-accent)}
+.sim-btn:disabled{opacity:0.5;cursor:not-allowed}
+.sim-btn.leak:hover{border-color:var(--signal-amber);color:var(--signal-amber)}
+.sim-btn.burst:hover{border-color:var(--fail-red);color:var(--fail-red)}
+.sim-event{border:1px solid var(--surface-border);border-radius:8px;background:var(--bg-base);padding:12px;margin-top:10px;animation:simIn 300ms cubic-bezier(0.16,1,0.3,1)}
+@keyframes simIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.sim-event-row{display:flex;justify-content:space-between;gap:12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.9}
+.sim-event-row b{color:var(--text-primary);font-weight:500}
+.sim-event-class{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:4px;margin-top:8px}
+.sim-event-class.VERIFIED{background:rgba(48,164,108,0.15);color:var(--pass-green);border:1px solid rgba(48,164,108,0.4)}
+.sim-event-class.CANDIDATE{background:rgba(255,178,36,0.15);color:var(--signal-amber);border:1px solid rgba(255,178,36,0.4)}
+.sim-event-class.INSUFFICIENT{background:rgba(139,139,139,0.15);color:var(--text-muted);border:1px solid var(--surface-border)}
+.sim-history{margin-top:14px;max-height:180px;overflow-y:auto;border:1px solid var(--surface-border);border-radius:8px;background:var(--bg-base)}
+.sim-history-row{display:grid;grid-template-columns:60px 55px 1fr auto;gap:10px;padding:8px 12px;align-items:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;border-bottom:1px solid var(--surface-border);color:var(--text-muted)}
+.sim-history-row:last-child{border-bottom:none}
+.sim-history-row .ts{color:var(--text-dim)}
+.sim-history-row .asset{color:var(--surface-accent);font-weight:700}
+.sim-history-row .conf{color:var(--text-primary);font-weight:700}
+.sim-history-row .cls{font-size:9px;padding:2px 6px;border-radius:2px;text-align:center;text-transform:uppercase;letter-spacing:0.05em;font-weight:700}
+.sim-history-row .cls.VERIFIED{background:rgba(48,164,108,0.15);color:var(--pass-green)}
+.sim-history-row .cls.CANDIDATE{background:rgba(255,178,36,0.15);color:var(--signal-amber)}
+.sim-history-row .cls.INSUFFICIENT{background:rgba(139,139,139,0.15);color:var(--text-muted)}
+.sim-note{margin-top:14px;padding:12px;border:1px dashed rgba(255,178,36,0.4);border-radius:8px;background:rgba(255,178,36,0.04);font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.8;color:var(--text-muted)}
+.sim-note b{color:var(--signal-amber);letter-spacing:1px;text-transform:uppercase}
+
+/* SIM ASSETS + PILOT FORM */
+.sim-assets{margin-top:16px;border:1px solid var(--surface-border);border-radius:8px;background:var(--bg-base);overflow:hidden}
+.sim-assets-head{padding:10px 14px;background:var(--bg-surface);border-bottom:1px solid var(--surface-border);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim)}
+.sim-assets-list{max-height:220px;overflow-y:auto}
+.sim-asset-row{display:grid;grid-template-columns:70px 55px 1fr 1fr;gap:8px;padding:8px 14px;border-bottom:1px solid var(--surface-border);font-family:'JetBrains Mono',monospace;font-size:11px;align-items:center}
+.sim-asset-row:last-child{border-bottom:none}
+.sim-asset-row .id{color:var(--surface-accent);font-weight:700}
+.sim-asset-row .type{color:var(--text-dim);font-size:9px;text-transform:uppercase;letter-spacing:0.08em}
+.sim-asset-row .meta{color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sim-asset-row .base{color:var(--pass-green);font-size:10px}
+.sim-pilot{margin-top:16px;border:1px solid var(--surface-border);border-radius:8px;padding:16px;background:var(--bg-base)}
+.sim-pilot-h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px}
+.sim-pilot-grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:640px){.sim-pilot-grid{grid-template-columns:1fr 1fr}}
+.sim-pilot-field{display:flex;flex-direction:column;gap:4px}
+.sim-pilot-field.full{grid-column:1/-1}
+.sim-pilot-field label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase}
+.sim-pilot-field input,.sim-pilot-field select,.sim-pilot-field textarea{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg-surface);border:1px solid var(--surface-border);border-radius:5px;padding:8px 10px;color:var(--text-primary);outline:none;transition:border-color 150ms;width:100%}
+.sim-pilot-field input:focus,.sim-pilot-field select:focus,.sim-pilot-field textarea:focus{border-color:var(--surface-accent)}
+.sim-pilot-field textarea{resize:vertical;min-height:50px}
+.sim-pilot-submit{margin-top:12px;width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:10px;border-radius:6px;background:var(--surface-accent);color:var(--bg-base);border:none;cursor:pointer}
+.sim-pilot-submit:hover{filter:brightness(0.92)}
+
+/* 8-bit simulator canvas */
+.sim8-bit{margin-top:16px;border:1px solid var(--surface-border);border-radius:8px;background:#0a0e17;overflow:hidden;position:relative}
+.sim8-bit canvas{display:block;width:100%;height:180px}
+.sim8-bit-label{position:absolute;bottom:8px;left:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--signal-cyan);letter-spacing:1px;text-transform:uppercase;opacity:0.7}
+
+/* ═══ FOOTER SIG ═══ */
+.footer-sig{border-top:1px solid var(--surface-border);padding:20px 0 28px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);line-height:1.9;margin-top:32px;transition:border-color 400ms cubic-bezier(0.65,0,0.35,1)}
+.footer-sig .colophon{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px 20px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--surface-border);font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.footer-sig .colophon b{color:var(--text-muted)}
+.view[data-state="pools"] .footer-sig,.view[data-state="pools"] .footer-sig .colophon{border-color:rgba(13,13,13,0.1);color:rgba(13,13,13,0.5)}
+.view[data-state="pools"] .footer-sig .colophon b{color:rgba(13,13,13,0.7)}
+
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+</style>
+</head>
+<body>
+
+<!-- ═══ TICKER ROW 1 — MARKET ═══ -->
+<div class="ticker-wrap" aria-label="ZAR market ticker">
+  <div class="ticker" id="tickerMarket">
+    <span class="tk"><span class="pair">ETHZAR</span><span class="price num">42 876.50</span><span class="up">▲ +0.42%</span></span>
+    <span class="tk"><span class="pair">BTCZAR</span><span class="price num">1 124 200</span><span class="down">▼ -1.12%</span></span>
+    <span class="tk"><span class="pair">SOLZAR</span><span class="price num">2 950.80</span><span class="up">▲ +1.97%</span></span>
+    <span class="tk"><span class="pair">USDCZAR</span><span class="price num">18.64</span><span class="down">▼ -0.05%</span></span>
+    <span class="tk"><span class="pair">LTCZAR</span><span class="price num">1 812.40</span><span class="up">▲ +0.80%</span></span>
+    <span class="tk"><span class="label">ESCROW</span><span class="price num">R284 900 / R533 000</span><span class="up">53.4%</span></span>
+  </div>
+</div>
+
+<!-- ═══ TICKER ROW 2 — LIVE STATE ═══ -->
+<div class="ticker-wrap" aria-label="Live state ticker">
+  <div class="ticker" id="tickerLive">
+    <span class="tk"><span class="label">CHAIN</span><span class="up" id="tkChain">0</span></span>
+    <span class="tk"><span class="label">VAULTED</span><span class="up" id="tkVaulted">R0</span></span>
+    <span class="tk"><span class="label">TXS</span><span class="up" id="tkTxs">0</span></span>
+    <span class="tk"><span class="label">UBUNTU SCORE</span><span class="up" id="tkScore">0</span></span>
+    <span class="tk"><span class="label">SYNC</span><span class="up">98.2%</span></span>
+  </div>
+</div>
+
+<!-- ═══ TICKER ROW 3 — SIM CONTEXT ═══ -->
+<div class="ticker-wrap" aria-label="Simulation context">
+  <div class="ticker" id="tickerSim">
+    <span class="tk"><span class="sim">SIM</span><span class="label">SEARM1 · 12 monitored pipes · 18 sensors</span></span>
+    <span class="tk"><span class="sim">EIS v1.0</span><span class="label">≥0.75 VERIFIED · ≥0.50 CANDIDATE · &lt;0.50 INSUFFICIENT</span></span>
+    <span class="tk"><span class="sim">DEVICE</span><span class="label">Ubuntu Gateway SEARM-1 · simulated for sale</span></span>
+    <span class="tk"><span class="sim">QUORUM</span><span class="label">3-of-5 oracle · CircuitBreaker.sol</span></span>
+  </div>
+</div>
+
+<!-- ═══ TOPBAR with breadcrumb ═══ -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><div class="brand-mark">◆</div>Trust UI · v1.0.4</div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-view="forge" role="tab">FORGE</button>
+      <button class="tab" data-view="fire" role="tab">FIRE</button>
+      <button class="tab" data-view="press" role="tab">PRESS</button>
+      <button class="tab" data-view="bench" role="tab">BENCH</button>
+      <button class="tab" data-view="field" role="tab">FIELD</button>
+      <button class="tab" data-view="spatial" role="tab">SPATIAL</button>
+      <button class="tab" data-view="surv" role="tab">SURV</button>
+      <button class="tab" data-view="twin" role="tab">TWIN</button>
+    </div>
+    <div class="topbar-right">
+      <div class="breadcrumb" id="breadcrumb">
+        <span class="crumb" id="crumbStack">FORGE</span>
+        <span class="sep">›</span>
+        <span class="crumb active" id="crumbState">ROOT</span>
+      </div>
+      <div class="state-chip" id="stateChip">● ROOT</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FORGE — ROOT / BRIDGE
+     ═══════════════════════════════════════════════════════ -->
+<div class="view active" id="view-forge" data-state="root">
+  <div class="container">
+    <div class="proof-strip">
+      <span class="proof-chip"><b>SHA-256</b> e3b0c442…</span>
+      <span class="proof-chip"><b>ED25519</b> forge::trust-root::2024-06</span>
+      <span class="proof-chip"><b>TS</b> 2024-06-12T14:32:09Z</span>
+      <span class="proof-chip"><b>DURATION</b> 1060ms</span>
+      <span class="proof-chip"><b>MOTTO</b> We measure twice, then dive</span>
+    </div>
+
+    <div class="masthead">
+      <div class="mode-toggle" role="tablist">
+        <button class="active" data-forge-mode="root">ROOT</button>
+        <button data-forge-mode="bridge">BRIDGE</button>
+      </div>
+      <div class="masthead-title" id="forgeTitle">FORGE trust UI — v1.0.4 · TRUST VERIFIER</div>
+      <div class="masthead-sub" id="forgeSub">session: dev-tty · secure · audit-mode · read-only</div>
+      <div class="masthead-motto">We measure twice, <em>then dive</em>.</div>
+    </div>
+
+    <!-- ROOT MODE -->
+    <div id="forgeRoot">
+      <section class="panel">
+        <div class="panel-label">[ File Ingest — Trust Root ]</div>
+        <div class="tty"><span class="prompt">&gt;</span> <span class="path">verify --path /ingest/report.pdf</span>
+<span class="plus">[+]</span> <span class="key">root:</span> <span class="val">trust-anchor//forge.root.v1 (pinned)</span>
+<span class="plus">[+]</span> <span class="key">file:</span> <span class="val">/ingest/report.pdf</span> <span class="dim">—</span> <span class="val">1,248,632 bytes</span>
+<span class="plus">[+]</span> <span class="key">sha256:</span> <span class="hash">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
+<span class="plus">[+]</span> <span class="key">signature (Ed25519):</span> <span class="hash">5c8f9a2d7e3b4f1a9c6d8e5b2a7f4d1c9b6e0f3a8d4c22e67f5a4db6c8e5f9d3a71c44f8a0b3cc7f5e9d1a2b6c</span></div>
+        <div class="badge-row">
+          <span class="badge badge-pass">[ PASS ] magic-byte check</span>
+          <span class="badge badge-clean">[ CLEAN ] ClamAV scan</span>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-label">[ Receipt — Verification JSON ]</div>
+        <div class="json-block"><span class="brace">{</span>
+  <span class="jkey">"verdict"</span>: <span class="jval">"TRUSTED"</span>,
+  <span class="jkey">"file"</span>: <span class="jval">"report.pdf"</span>,
+  <span class="jkey">"sha256"</span>: <span class="jval">"e3b0c442…b855"</span>,
+  <span class="jkey">"signature"</span>: <span class="brace">{</span>
+    <span class="jkey">"algorithm"</span>: <span class="jval">"Ed25519"</span>,
+    <span class="jkey">"key_id"</span>: <span class="jval">"forge::trust-root::2024-06"</span>,
+    <span class="jkey">"verified"</span>: <span class="jbool">true</span>
+  <span class="brace">}</span>,
+  <span class="jkey">"checks"</span>: <span class="brace">{</span>
+    <span class="jkey">"magic_byte"</span>: <span class="jval">"PASS"</span>,
+    <span class="jkey">"clamav"</span>: <span class="jval">"CLEAN"</span>,
+    <span class="jkey">"trust_root"</span>: <span class="jval">"VALID"</span>
+  <span class="brace">}</span>,
+  <span class="jkey">"timestamp"</span>: <span class="jval">"2024-06-12T14:32:09Z"</span>,
+  <span class="jkey">"duration_ms"</span>: <span class="jnum">1060</span>
+<span class="brace">}</span></div>
+      </section>
+      <section class="panel">
+        <div class="verdict-line">
+          <span class="badge badge-trusted">[ VERDICT ] TRUSTED</span>
+          <span style="color:var(--text-muted);font-weight:400">— no anomalies, trust chain valid</span>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);margin-top:6px">&gt; <span class="cursor"></span> 1.06s</div>
+      </section>
+    </div>
+
+    <!-- BRIDGE MODE -->
+    <div id="forgeBridge" style="display:none">
+      <section class="panel">
+        <div class="panel-label">[ ProofBridge — Mint Receipt ]</div>
+        <div class="tty"><span class="prompt">$</span> <span class="path">proofbridge mint --amount 500 --pool PILOT-C2</span>
+<span class="mint">▶</span> <span class="val">Receipt minted: 0xa3f8c9...d721</span>
+<span class="mint">▶</span> <span class="val">On-chain tx: 0x7b2e1f...4a89 [44,241 gas]</span>
+<span class="prompt">$</span> <span class="path">proofbridge verify 0xa3f8c9...d721</span>
+<span class="plus">✓</span> <span class="val">ED25519 signature valid · block 3 · PRF-000003</span></div>
+        <div class="badge-row">
+          <span class="badge badge-pass">[ ED25519 ] valid</span>
+          <span class="badge badge-clean">[ SHA-256 ] anchored</span>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-label">[ Proof Chain — Append-Only ]</div>
+        <div class="json-block"><span class="brace">{</span>
+  <span class="jkey">"receipt_id"</span>: <span class="jval">"PRF-000003"</span>,
+  <span class="jkey">"pool_id"</span>: <span class="jval">"PILOT-C2"</span>,
+  <span class="jkey">"member_id"</span>: <span class="jval">"thabo"</span>,
+  <span class="jkey">"amount"</span>: <span class="jnum">50000</span>,
+  <span class="jkey">"currency"</span>: <span class="jval">"ZAR"</span>,
+  <span class="jkey">"receipt_hash"</span>: <span class="jval">"a3f8c9...d721"</span>,
+  <span class="jkey">"ed25519_sig"</span>: <span class="jval">"b7e2c9f1..."</span>,
+  <span class="jkey">"block_height"</span>: <span class="jnum">3</span>,
+  <span class="jkey">"status"</span>: <span class="jval">"anchored"</span>,
+  <span class="jkey">"created_at"</span>: <span class="jval">"2024-06-12T14:32:09Z"</span>
+<span class="brace">}</span></div>
+      </section>
+      <section class="panel">
+        <div class="panel-label">[ Live Proof Feed — BroadcastChannel ]</div>
+        <div id="bridgeFeed" style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:2;color:var(--text-muted)">
+          <div>▶ <span style="color:var(--pass-green)">MINT</span> 0xa3f8c9…d721 · R500 · thabo · PRF-000003</div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="sim-btn leak" onclick="bridgeMintRandom()">+ Mint R500</button>
+        </div>
+      </section>
+
+      <!-- VVU MARKETING FRAME -->
+      <section class="panel">
+        <div class="panel-label">[ Venture Vision Ubuntu — Protocol ]</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.7;color:var(--text-muted);margin-bottom:16px">
+          Under VVU's methodology: <b style="color:var(--text-primary)">(1)</b> Stitch webhooks secure transactions;
+          <b style="color:var(--text-primary)">(2)</b> CircuitBreaker.sol enforces 3-of-5 oracle quorum;
+          <b style="color:var(--text-primary)">(3)</b> ANT Telemetry runs Bayesian anomaly detection;
+          <b style="color:var(--text-primary)">(4)</b> SHA-256 hashes anchor to Polygon Amoy;
+          <b style="color:var(--text-primary)">(5)</b> FROST threshold sigs + SafeKrypte HSM provide key custody.
+        </div>
+        <div class="steps-row">
+          <div class="step-card">
+            <div class="step-num">01</div>
+            <div class="step-title">Stitch Webhook</div>
+            <p class="step-desc">Payment fires signed webhook. Amount + member ID queued.</p>
+            <span class="step-tag">POST /api/stitch/payment</span>
+          </div>
+          <div class="step-card">
+            <div class="step-num">02</div>
+            <div class="step-title">Receipt Minted</div>
+            <p class="step-desc">Kernel signs with ED25519, mints on Polygon Amoy.</p>
+            <span class="step-tag">ED25519 / On-Chain</span>
+          </div>
+          <div class="step-card">
+            <div class="step-num">03</div>
+            <div class="step-title">Live Broadcast</div>
+            <p class="step-desc">Receipt hash broadcasts to all members. Circuit breaker monitors.</p>
+            <span class="step-tag">WS → RECEIPT_MINTED</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-label">[ Integrations — Full Stack ]</div>
+        <div style="display:grid;grid-template-columns:1fr;gap:1px;background:var(--surface-border);border-radius:10px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px">
+            <div style="background:var(--bg-panel);padding:14px 16px"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px">Stitch</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim)">Instant EFT, webhook receipts</div></div>
+            <div style="background:var(--bg-panel);padding:14px 16px"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px">Ubuntu Pools</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim)">ROSCA + ProofBridge attestation</div></div>
+            <div style="background:var(--bg-panel);padding:14px 16px"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px">ANT Telemetry</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim)">Bayesian model, anomaly detection</div></div>
+            <div style="background:var(--bg-panel);padding:14px 16px"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px">SafeKrypte HSM</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim)">Key custody, 3-of-5 SSS</div></div>
+            <div style="background:var(--bg-panel);padding:14px 16px"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px">Polygon Amoy</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim)">Testnet receipts, mainnet soon</div></div>
+            <div style="background:var(--bg-panel);padding:14px 16px"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px">Coq / TLA+</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim)">Formal verification proofs</div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="bottom-strip">
+      <span>Mode: <b id="forgeBottomMode">ROOT · VERIFY</b></span>
+      <span>Source: <b>forge::trust-root::2024-06</b></span>
+      <span>Log: <b>/var/log/forge/verify-20240612-143209.log</b></span>
+    </div>
+
+    <div class="footer-sig">
+      <div class="colophon"><span><b>FORGE</b> · TRUST VERIFIER v1.0.4</span><span>ROOT + BRIDGE · ED25519 / SHA-256</span><span>WE MEASURE TWICE, THEN DIVE</span></div>
+      ┌──────────────────────────────────────────────────┐<br>
+      │&nbsp;&nbsp;F·S · FLUID STUDIO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;07Y_IN_PRACTICE · 120+_SHIPPED_BUILDS · 2019&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;ZAR ONLY · NO USD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;DRAFT ≠ DECISION · DRAFT ≠ GRADE · DRAFT ≠ PAYOUT│<br>
+      └──────────────────────────────────────────────────┘
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FIRE — MARKET / POOLS
+     ═══════════════════════════════════════════════════════ -->
+<div class="view" id="view-fire" data-state="market">
+  <div class="container">
+    <div class="proof-strip">
+      <span class="proof-chip"><b>ESCROW</b> R284 900 / R533 000</span>
+      <span class="proof-chip"><b>FUNDED</b> 53.4%</span>
+      <span class="proof-chip"><b>TX</b> 0x3fA1…7bE9</span>
+      <span class="proof-chip"><b>CONTRACT</b> CampaignManager.sol</span>
+      <span class="proof-chip"><b>MOTTO</b> Calm at surface, engineered underneath</span>
+    </div>
+
+    <div class="masthead">
+      <div class="mode-toggle" role="tablist">
+        <button class="active" data-fire-mode="market">MARKET</button>
+        <button data-fire-mode="pools">POOLS</button>
+      </div>
+      <div class="masthead-title" id="fireTitle">FIRE trust UI</div>
+      <div class="masthead-sub" id="fireSub">Market Monitor Dashboard — ZAR Edition</div>
+      <div class="masthead-badges" id="fireBadges">
+        <span class="badge badge-amber">⚠ Simulated Data</span>
+        <span class="badge badge-amber" style="border-color:var(--surface-border);color:var(--text-muted);background:transparent">Draft ≠ decision</span>
+      </div>
+      <div class="masthead-motto">Calm at surface, <em>engineered underneath</em>.</div>
+    </div>
+
+    <!-- MARKET MODE -->
+    <div id="fireMarket">
+      <div class="fire-grid">
+        <section class="panel" style="margin:0">
+          <div class="panel-label">Pool Watchlist</div>
+          <div class="pool-row"><span class="pool-pair">R49 <span class="dot-up">●</span></span><span class="pool-chg chg-up">+2.14% ▲</span></div>
+          <div class="pool-row"><span class="pool-pair">R99 <span class="dot-up">●</span></span><span class="pool-chg chg-up">+0.63% ▲</span></div>
+          <div class="pool-row"><span class="pool-pair">R249 <span class="dot-down">●</span></span><span class="pool-chg chg-down">-1.22% ▼</span></div>
+          <div class="pool-row"><span class="pool-pair">R40 → R3700</span><span class="pool-chg chg-up">+4.81% ▲</span></div>
+          <div class="pool-meta"><b>Pool Range</b><br>Active: <b>12</b> · Watched: <b>4</b></div>
+        </section>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <section class="panel" style="margin:0">
+            <div class="panel-label">Funding Curve — Time vs ZAR</div>
+            <div class="chart-box">
+              <div class="chart-now num">Now: 284 900 ZAR</div>
+              <svg viewBox="0 0 400 180">
+                <g stroke="#1E1E26" stroke-width="1">
+                  <line x1="40" y1="20" x2="380" y2="20"/><line x1="40" y1="60" x2="380" y2="60"/>
+                  <line x1="40" y1="100" x2="380" y2="100"/><line x1="40" y1="140" x2="380" y2="140"/>
+                  <line x1="40" y1="20" x2="40" y2="140"/><line x1="125" y1="20" x2="125" y2="140"/>
+                  <line x1="210" y1="20" x2="210" y2="140"/><line x1="295" y1="20" x2="295" y2="140"/>
+                  <line x1="380" y1="20" x2="380" y2="140"/>
+                </g>
+                <g font-family="JetBrains Mono,monospace" font-size="9" fill="#565656" text-anchor="end">
+                  <text x="34" y="24">350k</text><text x="34" y="64">300k</text>
+                  <text x="34" y="104">250k</text><text x="34" y="144">200k</text>
+                </g>
+                <path d="M40,120 C100,105 160,85 210,75 C260,65 320,50 380,38 L380,140 L40,140 Z" fill="rgba(48,164,108,0.07)"/>
+                <path class="curve-path" d="M40,120 C100,105 160,85 210,75 C260,65 320,50 380,38"/>
+                <circle cx="380" cy="38" r="4" fill="#F5F2ED" stroke="#30A46C" stroke-width="2"/>
+              </svg>
+              <div class="chart-labels"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+            </div>
+            <div class="funding-trend">Funding Trend: +3.2% over 24h ▲ Positive</div>
+          </section>
+
+          <section class="panel" style="margin:0">
+            <div class="panel-label">Stack Heat</div>
+            <div class="heat-grid">
+              <div class="heat-cell" style="background:rgba(0,144,255,0.35)">0.21</div>
+              <div class="heat-cell" style="background:rgba(48,164,108,0.35)">0.21</div>
+              <div class="heat-cell" style="background:rgba(255,178,36,0.35)">L1</div>
+              <div class="heat-cell" style="background:rgba(0,144,255,0.45)">L2</div>
+              <div class="heat-cell" style="background:rgba(255,178,36,0.4)">0.45</div>
+              <div class="heat-cell" style="background:rgba(228,72,77,0.4)">0.78</div>
+              <div class="heat-cell" style="background:rgba(0,144,255,0.55)">L3</div>
+              <div class="heat-cell" style="background:rgba(48,164,108,0.5)">0.78</div>
+              <div class="heat-cell" style="background:rgba(228,72,77,0.55)">0.92</div>
+            </div>
+            <div class="heat-labels"><span>Low</span><span>· · ·</span><span>· · ·</span><span>High</span></div>
+            <div class="heat-bar"></div>
+          </section>
+        </div>
+
+        <section class="panel" style="margin:0">
+          <div class="panel-label">Escrow Overview</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-bottom:8px">Total Escrowed / Target</div>
+          <div class="escrow-big num">R284 900 <span class="sep">/</span><br>R533 000</div>
+          <div class="progress-track"><div class="progress-fill" style="width:53.4%"></div></div>
+          <div class="funded-line num">53.4% Funded · +R9 120 (24h) ▲</div>
+          <div class="kv"><span class="k">Contract:</span><br><span class="contract">CampaignManager.sol</span></div>
+          <div class="kv"><span class="k">Escrow Tx Hash:</span>
+            <div class="tx-hash" id="fireTxHash">
+              <span>0x3fA1…7bE9dC2a4F5e8B3c6D9f0A1b2C3d4E5f8dC2</span>
+              <span class="copy" id="fireCopyLabel">⧉ copy</span>
+            </div>
+          </div>
+          <div class="status-pill">Status: ACTIVE · SECURE</div>
+        </section>
+      </div>
+
+      <div class="bottom-strip">
+        <span>Risk: <b>LOW</b> · Updated: <b>2025-10-16 14:32:11 SAST</b> · Refresh: 5s</span>
+        <span>Source: <b>Simulated</b></span>
+        <span><span class="pos">Positive: 7 ●</span> <span class="neg">Negative: 2 ●</span></span>
+      </div>
+    </div>
+
+    <!-- POOLS MODE -->
+    <div id="firePools" style="display:none">
+      <div class="pool-hero">
+        <h2>Saving together,<br><span class="amber">proven</span> on-chain.</h2>
+        <p>Ubuntu Pools is a ROSCA-powered community savings platform. Every contribution is cryptographically receipted — every payout is verified by your pool.</p>
+      </div>
+
+      <div class="fire-grid">
+        <section class="panel" style="margin:0">
+          <div class="panel-label">Pilot Cohort — Cycle 2 · LIVE</div>
+          <div class="pool-vaulted" id="poolVaulted">R 0</div>
+          <div class="pool-overline">LOCALSTORAGE CHAIN · FACILITATOR APPROVED</div>
+          <div class="pool-progress"><div class="pool-progress-fill" id="poolProgress" style="width:0%"></div></div>
+          <div class="funded-line num" style="margin-top:12px" id="poolProofCount">0 verified receipts</div>
+        </section>
+
+        <section class="panel" style="margin:0">
+          <div class="panel-label">Chain State</div>
+          <div class="kv"><span class="k">Chain height:</span> <b id="poolChain" style="color:var(--text-primary)">0</b></div>
+          <div class="kv"><span class="k">Avg Ubuntu score:</span> <b id="poolScore" style="color:var(--text-primary)">0</b></div>
+          <div class="kv"><span class="k">Active pools:</span> <b style="color:var(--text-primary)">1</b></div>
+          <div class="kv"><span class="k">Storage:</span> <b style="color:var(--text-primary)">localStorage</b></div>
+          <div class="kv"><span class="k">Crypto:</span> <b style="color:var(--text-primary)">Ed25519 + SHA-256</b></div>
+        </section>
+
+        <section class="panel" style="margin:0">
+          <div class="panel-label">Verified Receipts</div>
+          <div class="receipts-list" id="poolReceipts">No receipts yet. Mint one below.</div>
+        </section>
+      </div>
+
+      <div class="panel">
+        <div class="panel-label">Simulate a Contribution</div>
+        <div id="poolContributeBtns"></div>
+      </div>
+
+      <!-- 3-STEP HOW IT WORKS -->
+      <div class="panel">
+        <div class="panel-label">How It Works — Three Steps</div>
+        <div class="steps-row">
+          <div class="step-card">
+            <div class="step-num">01</div>
+            <div class="step-title">Contribute</div>
+            <p class="step-desc">Pay via Stitch. In this demo, click a member to simulate a real R500 contribution.</p>
+            <span class="step-tag">STITCH / WEBHOOK</span>
+          </div>
+          <div class="step-card">
+            <div class="step-num">02</div>
+            <div class="step-title">Receive Proof</div>
+            <p class="step-desc">Every contribution mints an ED25519-signed receipt, hashed with SHA-256, anchored to local chain.</p>
+            <span class="step-tag">ED25519 / SHA-256</span>
+          </div>
+          <div class="step-card">
+            <div class="step-num">03</div>
+            <div class="step-title">Broadcast Live</div>
+            <p class="step-desc">Events broadcast to all tabs instantly. Watch ProofBridge feed update in real time.</p>
+            <span class="step-tag">BROADCAST CHANNEL</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8-BIT SIMULATOR CANVAS -->
+      <div class="panel">
+        <div class="panel-label">8-Bit Data Bus Simulator</div>
+        <div class="sim8-bit">
+          <canvas id="sim8bit" width="800" height="180"></canvas>
+          <div class="sim8-bit-label">▶ DATA BUS · packets in motion · 30 ms / frame</div>
+        </div>
+      </div>
+
+      <div class="bottom-strip">
+        <span>Source: <b>Live (your browser)</b> · Persisted: <b>localStorage</b></span>
+        <span>Draft ≠ payout · Not financial advice · ZAR only</span>
+      </div>
+    </div>
+
+    <div class="footer-sig">
+      <div class="colophon"><span><b>FIRE</b> · TRUST LEDGER v1.0.4</span><span>MARKET + POOLS · ZAR ONLY</span><span>CALM AT SURFACE, ENGINEERED UNDERNEATH</span></div>
+      ┌──────────────────────────────────────────────────┐<br>
+      │&nbsp;&nbsp;F·S · FLUID STUDIO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;07Y_IN_PRACTICE · 120+_SHIPPED_BUILDS · 2019&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;ZAR ONLY · NO USD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;DRAFT ≠ DECISION · DRAFT ≠ GRADE · DRAFT ≠ PAYOUT│<br>
+      └──────────────────────────────────────────────────┘
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PRESS
+     ═══════════════════════════════════════════════════════ -->
+<div class="view" id="view-press" data-state="press">
+  <div class="container">
+    <div class="proof-strip">
+      <span class="proof-chip"><b>SHA-256</b> 9f4b2a…7e1d</span>
+      <span class="proof-chip"><b>TS</b> 2024-06-11T14:32:08Z</span>
+      <span class="proof-chip"><b>SRC</b> creator-bts-take03.webm</span>
+      <span class="proof-chip"><b>MOTTO</b> Motion carries the meaning</span>
+      <span class="proof-chip"><b>ZAR</b> R49 · R99 · R249</span>
+    </div>
+
+    <div class="press-nav">
+      <div class="press-logo"><span class="mark">🛡</span> PRESS</div>
+      <div class="press-cta">
+        <a href="#" class="press-btn press-btn-ghost">Sign In</a>
+        <a href="#" class="press-btn press-btn-red">Get Started</a>
+      </div>
+    </div>
+
+    <section class="press-hero">
+      <div>
+        <h1>Trust What<br>You Watch</h1>
+        <p class="press-hero-sub">Verified creator reviews. Every claim linked to source footage.</p>
+        <div class="press-motto">Motion carries <em>the meaning</em>.</div>
+        <div class="press-badges">
+          <span class="press-tb">🛡 SHA-256 secured</span>
+          <span style="color:var(--text-dim)">·</span>
+          <span class="press-tb">Tamper-proof</span>
+          <span style="color:var(--text-dim)">·</span>
+          <span class="press-tb">Creator-first</span>
+        </div>
+        <div class="press-vs-row">
+          <span class="press-vs-chip"><span class="press-vs-icon">🛡</span> VERIFIED SOURCE</span>
+          <span class="press-sha-chip">SHA-256: <span class="hash">9f4b2a…7e1d</span> · ts: 2024-06-11T14:32:08Z</span>
+        </div>
+      </div>
+      <div>
+        <div class="press-video-panel">
+          <div class="press-draft-flag">⚠ Draft · placeholder video · swap for creator-bts-take03.webm before ship</div>
+          <div class="press-video-frame">
+            <video autoplay muted loop playsinline>
+              <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
+            </video>
+            <div class="press-video-top"><span>Muted · Autoplay Preview</span><span class="press-live">● LIVE BTS</span></div>
+            <div class="press-video-bottom"><span>Sticky Video — Following as you scroll</span><span class="num">0:12 / 2:34</span></div>
+            <div class="press-video-progress"></div>
+          </div>
+          <div class="press-source-note">source: creator-bts-take03.webm · sha256: 9f4b2a8c…e1d · pinned · ts: 2024-06-11T14:32:08Z</div>
+        </div>
+        <div class="press-review">
+          <div class="press-review-head">Written Review Companion</div>
+          <p class="press-review-body">"Rigorous test. No sponsorship disclosed. Thermal results match reported specs. Confidence: High."</p>
+          <div class="press-review-meta">
+            <span class="press-stars">★★★★★</span>
+            <span class="press-trust-score num">Trust Score: <b>94/100</b></span>
+          </div>
+          <div class="press-trust-meta">rubric v3 · reviewed 2024-06-11 · source: creator-bts-take03.webm</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="press-pricing">
+      <div class="press-pricing-head">Pricing for Creators</div>
+      <div class="press-pricing-sub">Transparent. Pay only for what you verify.</div>
+      <div class="press-tiers">
+        <div class="press-tier"><div class="press-tier-name">Starter</div><div class="press-tier-price num">R49</div><div class="press-tier-desc">5 verifications/mo</div></div>
+        <div class="press-tier featured"><div class="press-tier-name">Pro</div><div class="press-tier-price num">R99</div><div class="press-tier-desc">20 verifications/mo</div></div>
+        <div class="press-tier"><div class="press-tier-name">Studio</div><div class="press-tier-price num">R249</div><div class="press-tier-desc">50 verifications/mo + API</div></div>
+      </div>
+    </section>
+
+    <div class="bottom-strip">
+      <span>Source: <b>creator-bts-take03.webm</b> · SHA pinned</span>
+      <span>Draft ≠ decision · Muted previews only</span>
+    </div>
+
+    <div class="footer-sig">
+      <div class="colophon"><span><b>PRESS</b> · CAPTURE v1.0.4</span><span>SHA-LINKED · CREATOR-FIRST</span><span>MOTION CARRIES THE MEANING</span></div>
+      ┌──────────────────────────────────────────────────┐<br>
+      │&nbsp;&nbsp;F·S · FLUID STUDIO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;07Y_IN_PRACTICE · 120+_SHIPPED_BUILDS · 2019&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;ZAR ONLY · NO USD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;DRAFT ≠ DECISION · DRAFT ≠ GRADE · DRAFT ≠ PAYOUT│<br>
+      └──────────────────────────────────────────────────┘
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     BENCH — LICENSE / AUTHOR
+     ═══════════════════════════════════════════════════════ -->
+<div class="view" id="view-bench" data-state="license">
+  <div class="container">
+    <div class="proof-strip">
+      <span class="proof-chip"><b>LICENSE</b> LIC-SEARM-1-7F9A-4D22</span>
+      <span class="proof-chip"><b>FINGERPRINT</b> Ubuntu Gateway SEARM-1</span>
+      <span class="proof-chip"><b>ED25519</b> 5a3f7c9d…</span>
+      <span class="proof-chip"><b>EXPIRY</b> 2026-11-30</span>
+      <span class="proof-chip"><b>MOTTO</b> Code holds the pressure</span>
+    </div>
+
+    <div class="masthead">
+      <div class="mode-toggle" role="tablist">
+        <button class="active" data-bench-mode="license">LICENSE</button>
+        <button data-bench-mode="author">AUTHOR</button>
+      </div>
+      <div class="masthead-title">BENCH — TRUST UI · NODE-LOCKED LICENSING · EDITORIAL</div>
+      <div class="masthead-sub" id="benchSub">v1.2 · PAGE 12—13 · PRINTED RISOGRAPH</div>
+      <div class="masthead-motto">Code holds <em>the pressure</em>.</div>
+    </div>
+
+    <!-- LICENSE MODE -->
+    <div id="benchLicense">
+      <section class="bench-spread">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+            <span style="width:24px;height:1px;background:var(--surface-accent);display:inline-block"></span>
+            BENCH TRUST UI · v1.0.4
+          </div>
+          <h1 class="bench-display">TRUST,<br>VERIFIED<br><span class="accent">AT THE</span><span class="outline">NODE</span></h1>
+          <p class="bench-sub">A traceable, non-transferable license framework for secure hardware deployment.</p>
+          <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--surface-border);border-radius:10px;overflow:hidden">
+            <div style="background:var(--bg-panel);padding:14px 16px"><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px">Compliance</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-primary);line-height:1.8">EU-SLA 2024/1129<br>UK-CyberReg 2024/18<br>ISO/IEC 19790:2022<br>BNC-2024-TL-8811</div></div>
+            <div style="background:var(--bg-panel);padding:14px 16px"><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px">Capabilities</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-primary);line-height:1.8">Device-bound Ed25519<br>Immutable audit trail<br>Offline verification<br>Regulatory traceability</div></div>
+          </div>
+        </div>
+        <div class="bench-card-wrap">
+          <div class="bench-card">
+            <div class="bench-card-head">
+              <div class="bench-card-title">License Card</div>
+              <div class="bench-card-badge">Node Locked</div>
+            </div>
+            <div class="bench-card-body">
+              <div class="bench-row"><span class="k">Product</span><span class="v">BENCH Trust UI — Node Locked</span></div>
+              <div class="bench-row"><span class="k">Fingerprint</span><span class="v">Ubuntu Gateway SEARM-1</span></div>
+              <div class="bench-row"><span class="k">License ID</span><span class="v">LIC-SEARM-1-7F9A-4D22</span></div>
+              <div class="bench-row"><span class="k">Issued</span><span class="v">2025-12-01</span></div>
+              <div class="bench-row"><span class="k">Expiry</span><span class="v">2026-11-30</span></div>
+              <div class="bench-row"><span class="k">Ed25519</span><span class="v" style="font-size:11px;color:rgba(13,13,13,0.75)">ed25519::5a3f7c9d2e8b1f4a…c7e9a6d3</span></div>
+              <div class="bench-status">Status: ACTIVE · NODE VERIFIED · NO TRANSFER</div>
+              <div class="bench-qr">
+                <svg class="bench-qr-svg" viewBox="0 0 29 29" shape-rendering="crispEdges">
+                  <rect width="29" height="29" fill="#fff"/>
+                  <rect x="0" y="0" width="7" height="7" fill="#0D0D0D"/><rect x="1" y="1" width="5" height="5" fill="#fff"/><rect x="2" y="2" width="3" height="3" fill="#0D0D0D"/>
+                  <rect x="22" y="0" width="7" height="7" fill="#0D0D0D"/><rect x="23" y="1" width="5" height="5" fill="#fff"/><rect x="24" y="2" width="3" height="3" fill="#0D0D0D"/>
+                  <rect x="0" y="22" width="7" height="7" fill="#0D0D0D"/><rect x="1" y="23" width="5" height="5" fill="#fff"/><rect x="2" y="24" width="3" height="3" fill="#0D0D0D"/>
+                  <g fill="#0D0D0D"><rect x="8" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="17" y="0" width="1" height="1"/><rect x="20" y="0" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="12" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="18" y="2" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="16" y="4" width="1" height="1"/><rect x="19" y="4" width="1" height="1"/><rect x="22" y="4" width="1" height="1"/><rect x="25" y="4" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="11" y="6" width="1" height="1"/><rect x="14" y="6" width="1" height="1"/><rect x="17" y="6" width="1" height="1"/><rect x="20" y="6" width="1" height="1"/><rect x="23" y="6" width="1" height="1"/><rect x="0" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="11" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="18" y="8" width="1" height="1"/><rect x="21" y="8" width="1" height="1"/><rect x="24" y="8" width="1" height="1"/><rect x="26" y="8" width="1" height="1"/><rect x="28" y="8" width="1" height="1"/><rect x="1" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="10" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="17" y="10" width="1" height="1"/><rect x="19" y="10" width="1" height="1"/><rect x="22" y="10" width="1" height="1"/><rect x="25" y="10" width="1" height="1"/><rect x="27" y="10" width="1" height="1"/><rect x="0" y="12" width="1" height="1"/><rect x="2" y="12" width="1" height="1"/><rect x="4" y="12" width="1" height="1"/><rect x="7" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/><rect x="11" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="16" y="12" width="1" height="1"/><rect x="18" y="12" width="1" height="1"/><rect x="21" y="12" width="1" height="1"/><rect x="23" y="12" width="1" height="1"/><rect x="26" y="12" width="1" height="1"/><rect x="28" y="12" width="1" height="1"/><rect x="1" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="6" y="14" width="1" height="1"/><rect x="8" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/><rect x="17" y="14" width="1" height="1"/><rect x="20" y="14" width="1" height="1"/><rect x="22" y="14" width="1" height="1"/><rect x="25" y="14" width="1" height="1"/><rect x="27" y="14" width="1" height="1"/><rect x="0" y="16" width="1" height="1"/><rect x="3" y="16" width="1" height="1"/><rect x="5" y="16" width="1" height="1"/><rect x="7" y="16" width="1" height="1"/><rect x="9" y="16" width="1" height="1"/><rect x="12" y="16" width="1" height="1"/><rect x="14" y="16" width="1" height="1"/><rect x="16" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="26" y="16" width="1" height="1"/><rect x="28" y="16" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/><rect x="10" y="19" width="1" height="1"/><rect x="13" y="19" width="1" height="1"/><rect x="15" y="19" width="1" height="1"/><rect x="18" y="19" width="1" height="1"/><rect x="20" y="19" width="1" height="1"/><rect x="23" y="19" width="1" height="1"/><rect x="25" y="19" width="1" height="1"/><rect x="27" y="19" width="1" height="1"/><rect x="8" y="22" width="1" height="1"/><rect x="11" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="16" y="22" width="1" height="1"/><rect x="19" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="25" y="22" width="1" height="1"/><rect x="28" y="22" width="1" height="1"/><rect x="8" y="24" width="1" height="1"/><rect x="10" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="17" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="23" y="24" width="1" height="1"/><rect x="26" y="24" width="1" height="1"/><rect x="8" y="26" width="1" height="1"/><rect x="11" y="26" width="1" height="1"/><rect x="13" y="26" width="1" height="1"/><rect x="16" y="26" width="1" height="1"/><rect x="18" y="26" width="1" height="1"/><rect x="21" y="26" width="1" height="1"/><rect x="24" y="26" width="1" height="1"/><rect x="27" y="26" width="1" height="1"/><rect x="8" y="28" width="1" height="1"/><rect x="10" y="28" width="1" height="1"/><rect x="12" y="28" width="1" height="1"/><rect x="14" y="28" width="1" height="1"/><rect x="17" y="28" width="1" height="1"/><rect x="19" y="28" width="1" height="1"/><rect x="22" y="28" width="1" height="1"/><rect x="25" y="28" width="1" height="1"/></g>
+                </svg>
+                <div class="bench-qr-meta">
+                  <b>Scan to verify</b>
+                  <span class="url">bench.trust/verify/SEARM-1/7F9A</span><br>
+                  issuer: forge::trust-root::2024-06<br>
+                  algo: ed25519 · hash: sha256<br>
+                  ts: 2025-12-01T00:00:00Z
+                </div>
+              </div>
+              <div class="bench-checklist">
+                <div class="bench-checklist-h">Verification Checklist</div>
+                <ul>
+                  <li>DEVICE FINGERPRINT MATCH <span class="meta">SEARM-1</span></li>
+                  <li>SIGNATURE VALID · ED25519 <span class="meta">5a3f7c9d…</span></li>
+                  <li>EXPIRY WITHIN VALID PERIOD <span class="meta">335 days</span></li>
+                  <li>REGISTRY: AUDIT LOG <span class="meta">tail: 2025-12-01</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- AUTHOR MODE -->
+    <div id="benchAuthor" style="display:none">
+      <section class="panel">
+        <div class="panel-label">[ Plugin Creator Studio ]</div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:14px">
+          The licensed SEARM1 device generates its own skills. The license travels with the SKILL.md.
+        </p>
+        <div class="bench-author-grid">
+          <div class="bench-author-panel">
+            <div class="bench-author-label">Plugin Name / Slug</div>
+            <input class="bench-author-input" id="pluginSlug" value="searm-pipeline">
+            <div class="bench-author-label" style="margin-top:12px">Display Name</div>
+            <input class="bench-author-input" id="pluginName" value="SEARM Pipeline">
+            <div class="bench-author-label" style="margin-top:12px">Description</div>
+            <input class="bench-author-input" id="pluginDesc" value="SEARM1 water-evidence pipeline agent">
+            <div class="bench-author-label" style="margin-top:12px">Capabilities</div>
+            <div class="cap-grid" id="capGrid">
+              <button class="cap-toggle on" data-cap="file-ops"><span class="box">✓</span> file-ops</button>
+              <button class="cap-toggle on" data-cap="shell-commands"><span class="box">✓</span> shell-commands</button>
+              <button class="cap-toggle on" data-cap="api-calls"><span class="box">✓</span> api-calls</button>
+              <button class="cap-toggle" data-cap="memory"><span class="box"></span> memory</button>
+            </div>
+          </div>
+          <div class="bench-author-panel">
+            <div class="bench-author-label">Generated SKILL.md</div>
+            <div class="bench-author-output" id="skillMd"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-label">[ Install Commands ]</div>
+        <div class="bench-install">
+          <div class="bench-install-head">
+            <span>TERMINAL COMMANDS · .codex/skills/&lt;slug&gt;/</span>
+            <button class="bench-install-copy" id="copyInstall">Copy All</button>
+          </div>
+          <pre class="bench-install-pre" id="installCommands"></pre>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-label">[ Best Practices Reference ]</div>
+        <div class="bench-bp-grid">
+          <div class="bench-bp-card">
+            <h4>Naming</h4>
+            <ul>
+              <li>slug = folder = skill id — under 24 chars, kebab-case</li>
+              <li>displayName is human-facing, Title Case</li>
+              <li>avoid generic names like `helper` — prefix with domain</li>
+            </ul>
+          </div>
+          <div class="bench-bp-card">
+            <h4>System vs User Skill</h4>
+            <ul>
+              <li><b style="color:var(--text-primary)">.system / global</b> — ~/.codex/skills/ — available everywhere</li>
+              <li><b style="color:var(--text-primary)">project / .codex</b> — ./.codex/skills/ — committed, team-shared</li>
+            </ul>
+          </div>
+          <div class="bench-bp-card">
+            <h4>plugin.json fields</h4>
+            <ul>
+              <li>name: slug identifier</li>
+              <li>description: shown in skill picker</li>
+              <li>capabilities: array of strings</li>
+              <li>version: semver · entry: SKILL.md</li>
+            </ul>
+          </div>
+          <div class="bench-bp-card">
+            <h4>License carries</h4>
+            <ul>
+              <li>LIC-SEARM-1-7F9A-4D22 embedded in SKILL.md frontmatter</li>
+              <li>Fingerprint binding: Ubuntu Gateway SEARM-1</li>
+              <li>Non-transferable · revocation invalidates</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="bottom-strip">
+      <span>Mode: <b id="benchBottomMode">LICENSE · NODE-LOCKED</b></span>
+      <span>Source: <b>forge::trust-root::2024-06</b></span>
+      <span>Authorization + confidentiality required · Not legal advice</span>
+    </div>
+
+    <div class="footer-sig">
+      <div class="colophon"><span><b>BENCH</b> · TRUST UI v1.2</span><span>LICENSE + AUTHORING · OFF-WHITE ON BLACK</span><span>CODE HOLDS THE PRESSURE</span></div>
+      ┌──────────────────────────────────────────────────┐<br>
+      │&nbsp;&nbsp;F·S · FLUID STUDIO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;07Y_IN_PRACTICE · 120+_SHIPPED_BUILDS · 2019&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;ZAR ONLY · NO USD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;DRAFT ≠ DECISION · DRAFT ≠ GRADE · DRAFT ≠ PAYOUT│<br>
+      └──────────────────────────────────────────────────┘
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FIELD — RESILIENCE / SIMULATION
+     ═══════════════════════════════════════════════════════ -->
+<div class="view" id="view-field" data-state="resilience">
+  <div class="container">
+    <div class="proof-strip">
+      <span class="proof-chip"><b>SYNC</b> 98.2%</span>
+      <span class="proof-chip"><b>TS</b> 2024-06-11 14:32 UTC</span>
+      <span class="proof-chip"><b>FRAGMENTS</b> 70 / 70</span>
+      <span class="proof-chip"><b>CHECKSUM</b> 0x9F42C1E7</span>
+      <span class="proof-chip"><b>MOTTO</b> Colour is depth gauge, not decoration</span>
+    </div>
+
+    <div class="masthead">
+      <div class="mode-toggle" role="tablist">
+        <button class="active" data-field-mode="resilience">RESILIENCE</button>
+        <button data-field-mode="simulation">SIMULATION</button>
+      </div>
+      <div class="masthead-row">
+        <div>
+          <div class="masthead-title" id="fieldTitle">🛡 FIELD trust UI</div>
+          <div class="masthead-sub" id="fieldSub">Dual-tier storage resilience</div>
+          <div class="masthead-motto">Colour is <em>depth gauge</em>, not decoration.</div>
+        </div>
+        <div class="field-sync">✓ 98.2% synced · last sync: 2024-06-11 14:32 UTC</div>
+      </div>
+      <div class="field-tiers">
+        <span class="field-tier">💾 IndexedDB cache · <b>active</b> · <span class="ok">1.4 GB</span></span>
+        <span class="field-tier">🪣 S3 Clean Quarantine · <b>isolated</b> · <span class="ok">healthy</span></span>
+        <span class="field-tier">📦 IPFS pin · <b>42 nodes</b> · <span class="ok">pinned</span></span>
+      </div>
+    </div>
+
+    <!-- RESILIENCE MODE -->
+    <div id="fieldResilience">
+      <div class="field-grid">
+        <section class="panel" style="margin:0">
+          <div class="panel-label">Pipeline Logs</div>
+          <div class="field-logs">
+            <div>&gt; VISUAL PIPELINE COMPILING .. <span class="ok">ok (3.2s)</span></div>
+            <div>&gt; GENERATION RUNNING .. <b>step 12/12</b> · embeddings</div>
+            <div>&gt; MOTION GRAPH SYNCED .. <span class="ok">98.2% nodes consistent</span></div>
+            <div>&gt; integrity check <span class="ok">passed</span></div>
+            <div>&gt; rebuild queued · <span class="warn">standby</span></div>
+          </div>
+          <div class="field-depth">
+            <div class="field-depth-gauge"></div>
+            <div class="field-depth-meta">Depth gauge<br><b>84.3m · validated</b><br>confidence: <b>high</b><br>calibration: <b class="ok">nominal ✓</b></div>
+          </div>
+        </section>
+        <section class="panel" style="margin:0">
+          <div class="panel-label">Fragments Archive Wall — 70 tiles</div>
+          <div class="field-frag-wall" id="fragWall"></div>
+          <div class="field-checksum">checksum <b>0x9F42C1E7</b> · 70/70 assembled · 0 errors · 2.1 GB · retention: immutable</div>
+        </section>
+      </div>
+      <div class="bottom-strip">
+        <span>storage resilience: <b>DUAL-TIER ACTIVE</b></span>
+        <span>collage: <b class="pos">70/70 assembled · 0 errors</b></span>
+        <span>size: <b>2.1 GB</b> · retention: <b>immutable</b></span>
+      </div>
+    </div>
+
+    <!-- SIMULATION MODE -->
+    <div id="fieldSimulation" style="display:none">
+      <div class="sim-layer">
+        <div class="sim-layer-head">
+          <div>
+            <div class="sim-layer-title">Simulation Layer — SEARM1 Devices</div>
+            <div class="sim-layer-sub">Live demo of the hardware up for sale · EIS v1.0 · Engine: SEARM1 · Zero Fabrication Mandate</div>
+          </div>
+          <div class="sim-badge">⚠ SIMULATED · Not deployed</div>
+        </div>
+
+        <div class="sim-stats">
+          <div class="sim-stat"><div class="sim-stat-num" id="simAssets">12</div><div class="sim-stat-label">Assets</div></div>
+          <div class="sim-stat"><div class="sim-stat-num" id="simTelemetry">42</div><div class="sim-stat-label">Telemetry</div></div>
+          <div class="sim-stat"><div class="sim-stat-num" id="simEvents">0</div><div class="sim-stat-label">Events</div></div>
+          <div class="sim-stat"><div class="sim-stat-num">0</div><div class="sim-stat-label">Disputes</div></div>
+          <div class="sim-stat"><div class="sim-stat-num">3-of-5</div><div class="sim-stat-label">Quorum</div></div>
+        </div>
+
+        <div class="sim-actions">
+          <button class="sim-btn leak" id="simLeak">⚡ Trigger Leak</button>
+          <button class="sim-btn burst" id="simBurst">💥 Trigger Burst</button>
+          <button class="sim-btn" id="simReset">Reset</button>
+        </div>
+
+        <div id="simLatest" class="sim-event" style="display:none"></div>
+        <div id="simEmpty" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);padding:14px;text-align:center;border:1px dashed var(--surface-border);border-radius:8px">
+          No events yet. Click <b style="color:var(--surface-accent)">Trigger Leak</b> to simulate a SEARM1 detection.
+        </div>
+
+        <div class="sim-history" id="simHistory"></div>
+
+        <div class="sim-note">
+          <b>Sales context</b>
+          The SEARM1 water-evidence device ships with the full Trust UI stack. This simulation is the sales floor — every leak, every burst, every EIS confidence score here is what the buyer sees in production, before they sign.
+        </div>
+
+        <!-- NETWORK ASSETS -->
+        <div class="sim-assets">
+          <div class="sim-assets-head">Network Assets — 12 pipes + nodes monitored by SEARM1</div>
+          <div class="sim-assets-list" id="simAssetsList"></div>
+        </div>
+
+        <!-- PILOT PROPOSAL FORM -->
+        <div class="sim-pilot">
+          <div class="sim-pilot-h">Pilot Proposal — Request SEARM1 Deployment</div>
+          <form id="pilotForm" onsubmit="submitPilot(event)">
+            <div class="sim-pilot-grid">
+              <div class="sim-pilot-field full">
+                <label>Company *</label>
+                <input name="company" required placeholder="NMBM Water Dept">
+              </div>
+              <div class="sim-pilot-field">
+                <label>Contact name *</label>
+                <input name="contact" required placeholder="Jane Doe">
+              </div>
+              <div class="sim-pilot-field">
+                <label>Email *</label>
+                <input name="email" type="email" required placeholder="jane@nmbm.gov.za">
+              </div>
+              <div class="sim-pilot-field">
+                <label>Facility type</label>
+                <select name="facility_type">
+                  <option value="">— select —</option>
+                  <option>municipal</option>
+                  <option>industrial</option>
+                  <option>commercial</option>
+                  <option>residential</option>
+                  <option>agricultural</option>
+                </select>
+              </div>
+              <div class="sim-pilot-field">
+                <label>Budget range (ZAR)</label>
+                <select name="budget_range">
+                  <option value="">— select —</option>
+                  <option>R 100k–250k</option>
+                  <option>R 250k–500k</option>
+                  <option>R 500k–1M</option>
+                  <option>R 1M+</option>
+                </select>
+              </div>
+              <div class="sim-pilot-field full">
+                <label>Pain points</label>
+                <textarea name="pain_points" placeholder="silent leaks, slow response, no GIS layer…"></textarea>
+              </div>
+              <div class="sim-pilot-field full">
+                <label>Desired outcomes</label>
+                <textarea name="desired_outcomes" placeholder="localize leaks within 50m, 24/7 evidence log…"></textarea>
+              </div>
+              <div class="sim-pilot-field">
+                <label>DMA size</label>
+                <input name="dma_size" placeholder="Ward 42 (≈ 1,800 connections)">
+              </div>
+              <div class="sim-pilot-field">
+                <label>Sensor count</label>
+                <input name="sensor_count" type="number" min="0" placeholder="18">
+              </div>
+            </div>
+            <button type="submit" class="sim-pilot-submit" id="pilotSubmit">Submit Pilot Proposal</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="bottom-strip">
+        <span>Sim: <b>SEARM1 · EIS v1.0</b> · API: <b>localhost:3001 (simulated)</b></span>
+        <span>Device: <b>Ubuntu Gateway SEARM-1</b> · Simulated for sale</span>
+        <span>Zero Fabrication Mandate · SIMULATION DATA</span>
+      </div>
+    </div>
+
+    <div class="footer-sig">
+      <div class="colophon"><span><b>FIELD</b> · TRUST UI v1.0.4</span><span>RESILIENCE + SIMULATION LAYER</span><span>COLOUR IS DEPTH GAUGE, NOT DECORATION</span></div>
+      ┌──────────────────────────────────────────────────┐<br>
+      │&nbsp;&nbsp;F·S · FLUID STUDIO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;07Y_IN_PRACTICE · 120+_SHIPPED_BUILDS · 2019&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;ZAR ONLY · NO USD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;DRAFT ≠ DECISION · DRAFT ≠ GRADE · DRAFT ≠ PAYOUT│<br>
+      └──────────────────────────────────────────────────┘
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SPATIAL — LEMON TREE TRACKER · SURFACE 19
+     Stack: FIELD (store) + FORGE (trust root)
+     ═══════════════════════════════════════════════════════ -->
+<div class="view" id="view-spatial" data-state="spatial">
+  <div class="container">
+    <div class="proof-strip">
+      <span class="proof-chip"><b>GPS</b> -26.2205, 28.1512</span>
+      <span class="proof-chip"><b>SHA-256</b> a3f7c9b2…f5a8</span>
+      <span class="proof-chip"><b>ED25519</b> forge::spatial::2026-10</span>
+      <span class="proof-chip"><b>ASSETS</b> 12 lemon trees</span>
+      <span class="proof-chip"><b>MOTTO</b> Trust on first sight</span>
+    </div>
+
+    <div class="masthead">
+      <div class="masthead-row">
+        <div>
+          <div class="masthead-title">SPATIAL — LEMON TREE TRACKER</div>
+          <div class="masthead-sub">Germiston block · physical-to-digital bridge · 12 assets signed at GPS + time</div>
+          <div class="masthead-motto">Trust on <em>first sight</em>.</div>
+        </div>
+        <div class="field-sync" style="color:var(--surface-accent);border-color:rgba(163,230,53,0.4);background:rgba(163,230,53,0.08)">✓ 12 ASSETS · LAST GPS PING 2m AGO</div>
+      </div>
+    </div>
+
+    <section class="panel" style="margin:0">
+      <div class="panel-label">[ OpenFreeMap Dark · Lemon Tree Markers ]</div>
+      <div id="spatialMap" style="width:100%;height:520px;background:#0a0a0c;border:1px solid var(--surface-border);border-radius:8px;position:relative;overflow:hidden"></div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim)">
+        <span>TILE SRC: <b style="color:var(--surface-accent)">OpenFreeMap · dark</b></span>
+        <span>STYLE: <b style="color:var(--text-primary)">tiles.openfreemap.org/styles/dark</b></span>
+        <span>CENTER: <b style="color:var(--text-primary)">[-26.22, 28.17]</b></span>
+        <span>ZOOM: <b style="color:var(--text-primary)">13</b></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-label">[ Asset Ledger — 12 Lemon Trees · Ed25519-signed ]</div>
+      <div id="spatialLedger" style="display:grid;grid-template-columns:1fr;gap:8px"></div>
+    </section>
+
+    <div class="bottom-strip">
+      <span>Source: <b>forge::spatial::2026-10</b> · 12 GPS receipts</span>
+      <span>Bridge: <b>:3020 → Spatial Intelligence target</b></span>
+      <span>Stack: <b>FIELD + FORGE</b></span>
+    </div>
+
+    <div class="footer-sig">
+      <div class="colophon"><span><b>SPATIAL</b> · TRUST UI v1.0.5</span><span>LEMON TREE TRACKER · FIELD + FORGE</span><span>TRUST ON FIRST SIGHT</span></div>
+      ┌──────────────────────────────────────────────────┐<br>
+      │&nbsp;&nbsp;F·S · FLUID STUDIO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;07Y_IN_PRACTICE · 120+_SHIPPED_BUILDS · 2019&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;ZAR ONLY · NO USD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;DRAFT ≠ DECISION · DRAFT ≠ GRADE · DRAFT ≠ PAYOUT│<br>
+      └──────────────────────────────────────────────────┘
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SURV — SURVEILLANCE MONITOR · SURFACE 20
+     Stack: PRESS (capture) → FORGE (verify) → FIELD (store)
+     ═══════════════════════════════════════════════════════ -->
+<div class="view" id="view-surv" data-state="surveillance">
+  <div class="container">
+    <div class="proof-strip">
+      <span class="proof-chip"><b>FEEDS</b> 4 live</span>
+      <span class="proof-chip"><b>CHUNK</b> 5s · webm/jpg</span>
+      <span class="proof-chip"><b>CLAMAV</b> PASS</span>
+      <span class="proof-chip"><b>QUARANTINE</b> 0</span>
+      <span class="proof-chip"><b>MOTTO</b> Every frame has tx hash</span>
+    </div>
+
+    <div class="masthead">
+      <div class="masthead-row">
+        <div>
+          <div class="masthead-title">SURVEILLANCE — CHECK-IN SYSTEM</div>
+          <div class="masthead-sub">4 camera feeds · per-chunk SHA + Ed25519 · ClamAV magic-byte verified · S3 Clean/Quarantine</div>
+          <div class="masthead-motto">Every frame <em>has tx hash</em>.</div>
+        </div>
+        <div class="field-sync" style="color:var(--surface-accent);border-color:rgba(163,230,53,0.4);background:rgba(163,230,53,0.08)">● 4 FEEDS LIVE · LAST TICK 2m AGO</div>
+      </div>
+    </div>
+
+    <section class="panel" style="margin:0">
+      <div class="panel-label">[ Live Feeds — 2×2 Grid · ForGE-Verified ]</div>
+      <div id="survGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-label">[ S3 Storage · Clean / Quarantine ]</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="border:1px solid rgba(48,164,108,0.4);background:rgba(48,164,108,0.04);border-radius:8px;padding:14px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--pass-green);letter-spacing:1px;margin-bottom:8px">✓ CLEAN BUCKET</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-primary);line-height:1.8">
+            <div>s3://field/vvu/surv/clean/</div>
+            <div style="color:var(--text-muted);margin-top:6px">chunks: <b style="color:var(--text-primary)">2,418</b> · size: <b style="color:var(--text-primary)">12.4 GB</b></div>
+            <div style="color:var(--text-muted)">last: <b style="color:var(--surface-accent)">cam-04 · 30s ago</b></div>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(229,72,77,0.3);background:rgba(229,72,77,0.03);border-radius:8px;padding:14px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--fail-red);letter-spacing:1px;margin-bottom:8px">⚠ QUARANTINE</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-primary);line-height:1.8">
+            <div>s3://field/vvu/surv/quarantine/</div>
+            <div style="color:var(--text-muted);margin-top:6px">chunks: <b style="color:var(--text-primary)">0</b> · size: <b style="color:var(--text-primary)">0 B</b></div>
+            <div style="color:var(--text-muted)">last: <b style="color:var(--text-dim)">—</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="bottom-strip">
+      <span>Stack: <b>PRESS → FORGE → FIELD</b></span>
+      <span>ClamAV: <b style="color:var(--pass-green)">PASS · 0 quarantined</b></span>
+      <span>Bridge: <b>:3020 → Surveillance target</b></span>
+    </div>
+
+    <div class="footer-sig">
+      <div class="colophon"><span><b>SURV</b> · TRUST UI v1.0.5</span><span>CHECK-IN SYSTEM · PRESS + FORGE + FIELD</span><span>EVERY FRAME HAS TX HASH</span></div>
+      ┌──────────────────────────────────────────────────┐<br>
+      │&nbsp;&nbsp;F·S · FLUID STUDIO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;07Y_IN_PRACTICE · 120+_SHIPPED_BUILDS · 2019&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;ZAR ONLY · NO USD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;DRAFT ≠ DECISION · DRAFT ≠ GRADE · DRAFT ≠ PAYOUT│<br>
+      └──────────────────────────────────────────────────┘
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TWIN — DIGITAL TWIN HOLOGRAM · SURFACE 21
+     Stack: PRESS (Motion) + FIELD (Archive Wall)
+     ═══════════════════════════════════════════════════════ -->
+<div class="view" id="view-twin" data-state="twin">
+  <div class="container">
+    <div class="proof-strip">
+      <span class="proof-chip"><b>HOLOGRAMS</b> 12</span>
+      <span class="proof-chip"><b>GHOST Δ</b> 2.4s</span>
+      <span class="proof-chip"><b>HISTORY</b> 14 states</span>
+      <span class="proof-chip"><b>ED25519</b> ed25519:7c4e…e9a</span>
+      <span class="proof-chip"><b>MOTTO</b> You can see history, not just now</span>
+    </div>
+
+    <div class="masthead">
+      <div class="masthead-row">
+        <div>
+          <div class="masthead-title">DIGITAL TWIN — HOLOGRAM</div>
+          <div class="masthead-sub">Three.js Fresnel shader · 4 LODs · ghost history overlay · Germiston 1km² block</div>
+          <div class="masthead-motto">You can see <em>history, not just now</em>.</div>
+        </div>
+        <div class="field-sync" style="color:var(--surface-accent);border-color:rgba(163,230,53,0.4);background:rgba(163,230,53,0.08)">● 12 HOLOGRAMS · 1 ALERT</div>
+      </div>
+    </div>
+
+    <section class="panel" style="margin:0">
+      <div class="panel-label">[ 3D Hologram — Three.js Fresnel · Ghost History ]</div>
+      <div style="display:grid;grid-template-columns:1fr 200px;gap:12px">
+        <div id="twinCanvas" style="width:100%;height:520px;background:radial-gradient(ellipse at center,#0d0a12 0%,#0a0a0c 70%);border:1px solid var(--surface-border);border-radius:8px;position:relative;overflow:hidden">
+          <div style="position:absolute;top:8px;left:8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--surface-accent);letter-spacing:1px;z-index:5;background:rgba(5,5,7,0.85);padding:4px 8px;border-radius:4px;border:1px solid var(--surface-border)">HOLOGRAMS 12 · GHOSTS 12 · POINT CLOUD 1,440</div>
+          <div style="position:absolute;bottom:8px;right:8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);z-index:5">scroll=rotate · drag=pan · 1-4=LOD</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="border:1px solid var(--surface-border);border-radius:6px;padding:10px;background:var(--bg-base)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px">LOD SELECTOR</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <button class="lod-btn" data-lod="1" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 8px;background:var(--bg-surface);color:var(--text-muted);border:1px solid var(--surface-border);border-radius:4px;cursor:pointer;text-align:left">LOD 1 · close</button>
+              <button class="lod-btn active" data-lod="2" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 8px;background:rgba(163,230,53,0.1);color:var(--surface-accent);border:1px solid rgba(163,230,53,0.4);border-radius:4px;cursor:pointer;text-align:left">LOD 2 · medium ✓</button>
+              <button class="lod-btn" data-lod="3" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 8px;background:var(--bg-surface);color:var(--text-muted);border:1px solid var(--surface-border);border-radius:4px;cursor:pointer;text-align:left">LOD 3 · far</button>
+              <button class="lod-btn" data-lod="4" style="font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 8px;background:var(--bg-surface);color:var(--text-muted);border:1px solid var(--surface-border);border-radius:4px;cursor:pointer;text-align:left">LOD 4 · horizon</button>
+            </div>
+          </div>
+          <div style="border:1px solid var(--surface-border);border-radius:6px;padding:10px;background:var(--bg-base)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px">DEPTH GAUGE</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#E5484D">-12.4m</div>
+            <div style="height:4px;background:var(--surface-border);border-radius:2px;margin-top:6px;overflow:hidden"><div style="height:100%;width:62%;background:linear-gradient(90deg,var(--pass-green),var(--signal-amber),#E5484D)"></div></div>
+          </div>
+          <div style="border:1px solid var(--surface-border);border-radius:6px;padding:10px;background:var(--bg-base)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px">FORGE SIG</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--surface-accent);word-break:break-all;line-height:1.5">ed25519:7c4e8a9b2f1d6c0e5a3b8d4f7c2e9a1b6d0f3c8e5a2b7d4f9c0e3a6b1d8f5c2e9a</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-label">[ History — 14 States · Ghost Δ 2.4s ]</div>
+      <div id="twinHistory" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto"></div>
+    </section>
+
+    <div class="bottom-strip">
+      <span>Stack: <b>PRESS + FIELD</b></span>
+      <span>Shader: <b>Fresnel · scanline · depth-gauge red</b></span>
+      <span>Bridge: <b>:3020 → Digital Twin target</b></span>
+    </div>
+
+    <div class="footer-sig">
+      <div class="colophon"><span><b>TWIN</b> · TRUST UI v1.0.5</span><span>DIGITAL TWIN HOLOGRAM · PRESS + FIELD</span><span>YOU CAN SEE HISTORY, NOT JUST NOW</span></div>
+      ┌──────────────────────────────────────────────────┐<br>
+      │&nbsp;&nbsp;F·S · FLUID STUDIO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;07Y_IN_PRACTICE · 120+_SHIPPED_BUILDS · 2019&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;ZAR ONLY · NO USD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+      │&nbsp;&nbsp;DRAFT ≠ DECISION · DRAFT ≠ GRADE · DRAFT ≠ PAYOUT│<br>
+      └──────────────────────────────────────────────────┘
+    </div>
+  </div>
+</div>
+
+<script>
+const SURFACE_LABELS = {
+  forge: {root:'ROOT', bridge:'BRIDGE'},
+  fire: {market:'MARKET', pools:'POOLS'},
+  press: {press:'CAPTURE'},
+  bench: {license:'LICENSE', author:'AUTHOR'},
+  field: {resilience:'RESILIENCE', simulation:'SIMULATION'},
+  spatial: {spatial:'LEMON-TREE'},
+  surv: {surveillance:'FEEDS'},
+  twin: {twin:'HOLOGRAM'},
+};
+function updateBreadcrumb(stack, state){
+  document.getElementById('crumbStack').textContent = stack.toUpperCase();
+  const label = (SURFACE_LABELS[stack] && SURFACE_LABELS[stack][state]) || state.toUpperCase();
+  document.getElementById('crumbState').textContent = label;
+  const chip = document.getElementById('stateChip');
+  chip.textContent = '● ' + label;
+  const view = document.getElementById('view-'+stack);
+  if(view){
+    const accent = getComputedStyle(view).getPropertyValue('--surface-accent').trim();
+    chip.style.borderColor = accent;
+    chip.style.color = accent;
+    chip.style.background = `color-mix(in srgb, ${accent} 8%, transparent)`;
+  }
+}
+function switchTab(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const view = document.getElementById('view-'+name);
+  view.classList.add('active');
+  document.querySelector('.tab[data-view="'+name+'"]').classList.add('active');
+  updateBreadcrumb(name, view.dataset.state);
+  window.scrollTo({top:0,behavior:'auto'});
+  if(name==='fire') renderPools();
+  if(name==='bench') renderAuthor();
+  if(name==='field'){ renderFragWall(); renderSim(); renderAssets(); }
+  if(name==='spatial') renderSpatial();
+  if(name==='surv') renderSurv();
+  if(name==='twin') renderTwin();
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.view)));
+
+/* ═══ FORGE MODE ═══ */
+document.querySelectorAll('[data-forge-mode]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const mode = btn.dataset.forgeMode;
+    document.querySelectorAll('[data-forge-mode]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = document.getElementById('view-forge');
+    view.dataset.state = mode;
+    document.getElementById('forgeRoot').style.display = mode==='root'?'':'none';
+    document.getElementById('forgeBridge').style.display = mode==='bridge'?'':'none';
+    document.getElementById('forgeTitle').textContent = mode==='root'
+      ? 'FORGE trust UI — v1.0.4 · TRUST VERIFIER'
+      : 'FORGE trust UI — v1.0.4 · PROOF BRIDGE';
+    document.getElementById('forgeSub').textContent = mode==='root'
+      ? 'session: dev-tty · secure · audit-mode · read-only'
+      : 'session: bridge-tty · mint-mode · append-only chain';
+    document.getElementById('forgeBottomMode').textContent = mode==='root'
+      ? 'ROOT · VERIFY' : 'BRIDGE · MINT';
+    updateBreadcrumb('forge', mode);
+  });
+});
+
+/* ═══ FIRE MODE ═══ */
+document.querySelectorAll('[data-fire-mode]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const mode = btn.dataset.fireMode;
+    document.querySelectorAll('[data-fire-mode]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = document.getElementById('view-fire');
+    view.dataset.state = mode;
+    document.getElementById('fireMarket').style.display = mode==='market'?'':'none';
+    document.getElementById('firePools').style.display = mode==='pools'?'':'none';
+    document.getElementById('fireTitle').textContent = mode==='market' ? 'FIRE trust UI' : 'FIRE · Ubuntu Pools';
+    document.getElementById('fireSub').textContent = mode==='market'
+      ? 'Market Monitor Dashboard — ZAR Edition'
+      : 'ROSCA — Collective savings, proven on-chain';
+    document.getElementById('fireBadges').style.display = mode==='market'?'':'none';
+    updateBreadcrumb('fire', mode);
+    if(mode==='pools'){ renderPools(); startSim8Bit(); }
+  });
+});
+
+/* ═══ BENCH MODE ═══ */
+document.querySelectorAll('[data-bench-mode]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const mode = btn.dataset.benchMode;
+    document.querySelectorAll('[data-bench-mode]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = document.getElementById('view-bench');
+    view.dataset.state = mode;
+    document.getElementById('benchLicense').style.display = mode==='license'?'':'none';
+    document.getElementById('benchAuthor').style.display = mode==='author'?'':'none';
+    document.getElementById('benchBottomMode').textContent = mode==='license'
+      ? 'LICENSE · NODE-LOCKED' : 'AUTHOR · PLUGIN STUDIO';
+    updateBreadcrumb('bench', mode);
+    if(mode==='author') renderAuthor();
+  });
+});
+
+/* ═══ FIELD MODE ═══ */
+document.querySelectorAll('[data-field-mode]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const mode = btn.dataset.fieldMode;
+    document.querySelectorAll('[data-field-mode]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = document.getElementById('view-field');
+    view.dataset.state = mode;
+    document.getElementById('fieldResilience').style.display = mode==='resilience'?'':'none';
+    document.getElementById('fieldSimulation').style.display = mode==='simulation'?'':'none';
+    document.getElementById('fieldTitle').textContent = mode==='resilience' ? '🛡 FIELD trust UI' : '🛡 FIELD · Simulation Layer';
+    document.getElementById('fieldSub').textContent = mode==='resilience'
+      ? 'Dual-tier storage resilience'
+      : 'SEARM1 water-evidence · simulated for sale';
+    updateBreadcrumb('field', mode);
+    if(mode==='simulation'){ renderSim(); renderAssets(); }
+  });
+});
+
+/* ═══ FORGE BRIDGE — mint ═══ */
+let bridgeCounter = 3;
+async function sha256Hex(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function bridgeMintRandom(){
+  bridgeCounter++;
+  const h = (await sha256Hex('prf-'+bridgeCounter+'-'+Date.now())).slice(0,16);
+  const feed = document.getElementById('bridgeFeed');
+  const row = document.createElement('div');
+  row.innerHTML = '▶ <span style="color:var(--pass-green)">MINT</span> 0x'+h+'… · R500 · thabo · PRF-'+String(bridgeCounter).padStart(6,'0');
+  feed.insertBefore(row, feed.firstChild);
+  while(feed.children.length>6) feed.removeChild(feed.lastChild);
+}
+
+/* ═══ FIRE TX COPY ═══ */
+(function(){
+  const el = document.getElementById('fireTxHash');
+  const label = document.getElementById('fireCopyLabel');
+  if(!el) return;
+  el.addEventListener('click',()=>{
+    const text = '0x3fA1…7bE9dC2a4F5e8B3c6D9f0A1b2C3d4E5f8dC2';
+    const done = ()=>{ label.textContent='✓ copied'; setTimeout(()=>label.textContent='⧉ copy',2000); };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(done);
+    else done();
+  });
+})();
+
+/* ═══ POOLS ledger ═══ */
+const DB_KEY='trustui-db-v1';
+function loadDb(){
+  const raw=localStorage.getItem(DB_KEY);
+  if(raw) return JSON.parse(raw);
+  const seed={pools:[{id:'PILOT-C2',target:1500000,members:['thabo','lerato','naledi','sipho']}],
+    members:{thabo:{name:'Thabo S.',score:842},lerato:{name:'Lerato K.',score:764},naledi:{name:'Naledi M.',score:910},sipho:{name:'Sipho D.',score:688}},
+    proofs:[],counter:0};
+  localStorage.setItem(DB_KEY,JSON.stringify(seed));
+  return seed;
+}
+function saveDb(db){localStorage.setItem(DB_KEY,JSON.stringify(db));}
+function getStats(){
+  const db=loadDb();
+  const vaulted=db.proofs.reduce((s,p)=>s+p.amount,0);
+  const scores=Object.values(db.members).map(m=>m.score);
+  const avg=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+  return {vaulted,txs:db.proofs.length,chain:db.proofs.length,avg};
+}
+function renderPools(){
+  const s=getStats();
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('poolVaulted','R '+s.vaulted.toLocaleString('en-ZA'));
+  set('poolProofCount',s.txs+' verified receipts');
+  set('poolChain',s.chain);
+  set('poolScore',s.avg);
+  set('tkChain',s.chain);set('tkVaulted','R'+s.vaulted.toLocaleString('en-ZA'));
+  set('tkTxs',s.txs);set('tkScore',s.avg);
+  const rc=document.getElementById('poolReceipts');
+  if(rc){
+    const db=loadDb();
+    rc.innerHTML=db.proofs.length
+      ? db.proofs.slice(-6).reverse().map(p=>`<div>▶ <b>${p.id}</b> · R${(p.amount/100).toLocaleString()} · ${p.memberId} · <span class="ok">anchored</span></div>`).join('')
+      : 'No receipts yet. Mint one below.';
+  }
+  const prog=document.getElementById('poolProgress');
+  if(prog) prog.style.width=Math.min(100,(s.vaulted/1500000)*100)+'%';
+  const btnWrap=document.getElementById('poolContributeBtns');
+  if(btnWrap && !btnWrap.dataset.built){
+    btnWrap.dataset.built='1';
+    const db=loadDb();
+    Object.entries(db.members).forEach(([id,m])=>{
+      const b=document.createElement('button');
+      b.className='contribute-btn';b.textContent='+ '+m.name+' R500';
+      b.onclick=()=>contribute(id);
+      btnWrap.appendChild(b);
+    });
+  }
+}
+async function contribute(memberId){
+  const db=loadDb();
+  const amount=50000;
+  const payload={poolId:'PILOT-C2',memberId,amount,ts:Date.now(),n:db.counter};
+  const h=(await sha256Hex(JSON.stringify(payload))).slice(0,32);
+  const proof={id:'PRF-'+String(db.counter).padStart(6,'0'),poolId:'PILOT-C2',memberId,amount,currency:'ZAR',receiptHash:h,status:'anchored',createdAt:new Date().toISOString()};
+  db.proofs.push(proof);db.counter++;saveDb(db);
+  renderPools();
+  const feed=document.getElementById('bridgeFeed');
+  if(feed){
+    const row=document.createElement('div');
+    row.innerHTML='▶ <span style="color:var(--pass-green)">MINT</span> 0x'+h.slice(0,12)+'… · R500 · '+memberId+' · '+proof.id;
+    feed.insertBefore(row,feed.firstChild);
+    while(feed.children.length>6)feed.removeChild(feed.lastChild);
+  }
+}
+
+/* ═══ 8-BIT SIM (inline canvas) ═══ */
+let sim8Started=false;
+function startSim8Bit(){
+  if(sim8Started) return;
+  sim8Started=true;
+  const canvas=document.getElementById('sim8bit');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  let W=canvas.width, H=canvas.height;
+  const packets=Array.from({length:12},()=>({x:Math.random()*W,y:60+Math.random()*60,speed:0.6+Math.random()*0.9,hue:Math.random()>0.5?'#00e5ff':'#ff00ff'}));
+  const leds=Array.from({length:8},(_,i)=>({x:W-40,y:20+i*18,on:false}));
+  function frame(){
+    ctx.fillStyle='#0a0e17';ctx.fillRect(0,0,W,H);
+    // bus line
+    ctx.strokeStyle='#1a3a8a';ctx.lineWidth=1;
+    for(let i=0;i<6;i++){ctx.beginPath();ctx.moveTo(0,30+i*25);ctx.lineTo(W,30+i*25);ctx.stroke();}
+    // packets
+    packets.forEach(p=>{
+      p.x+=p.speed;if(p.x>W)p.x=0;
+      ctx.fillStyle=p.hue;
+      ctx.shadowColor=p.hue;ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    });
+    // LEDs
+    const counter=Math.floor(performance.now()/200);
+    leds.forEach((l,i)=>{
+      const on=(counter>>i)&1;
+      ctx.fillStyle=on?'#00ff88':'#003300';
+      ctx.shadowColor=on?'#00ff88':'transparent';ctx.shadowBlur=on?6:0;
+      ctx.beginPath();ctx.arc(l.x,l.y,5,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+/* ═══ BENCH AUTHOR ═══ */
+function renderAuthor(){
+  const slug=document.getElementById('pluginSlug');
+  const name=document.getElementById('pluginName');
+  const desc=document.getElementById('pluginDesc');
+  const out=document.getElementById('skillMd');
+  const caps=getCaps();
+  if(!slug||!out) return;
+  const s=(slug.value||'searm-pipeline').toLowerCase().replace(/[^a-z0-9-_]/g,'-');
+  const n=name.value||s;
+  const d=desc.value||'SEARM1 water-evidence pipeline agent';
+  out.innerHTML=
+`<span class="k">---</span>
+<span class="k">name:</span> <span class="v">${s}</span>
+<span class="k">description:</span> <span class="v">${d}</span>
+<span class="k">capabilities:</span> <span class="v">[${caps.join(', ')}]</span>
+<span class="k">license:</span> <span class="r">LIC-SEARM-1-7F9A-4D22</span>
+<span class="k">fingerprint:</span> <span class="r">Ubuntu Gateway SEARM-1</span>
+<span class="k">---</span>
+
+<span class="r"># ${n}</span>
+
+<span class="k">## Capabilities</span>
+${caps.map(c=>`- ${c}`).join('\n')||'- (none)'}
+
+<span class="k">## Instructions</span>
+You are a specialist for ${n}.
+
+<span class="k">## License</span>
+Node-locked to Ubuntu Gateway SEARM-1.
+Non-transferable. Revocation or tampering invalidates.`;
+  document.getElementById('installCommands').innerHTML=
+`<span class="c"># 1. create skill directory</span>
+<span class="k">mkdir -p</span> .codex/skills/${s}
+
+<span class="c"># 2. write SKILL.md</span>
+<span class="k">cat &gt;</span> .codex/skills/${s}/SKILL.md &lt;&lt; 'EOF'
+--- 
+name: ${s}
+description: ${d}
+---
+EOF
+
+<span class="c"># 3. verify</span>
+<span class="k">ls -R</span> .codex/skills/${s}
+echo "&gt;&gt; ${s} ready."`;
+}
+function getCaps(){
+  return Array.from(document.querySelectorAll('.cap-toggle.on')).map(b=>b.dataset.cap);
+}
+document.querySelectorAll('.cap-toggle').forEach(b=>{
+  b.addEventListener('click',()=>{
+    b.classList.toggle('on');
+    b.querySelector('.box').textContent = b.classList.contains('on')?'✓':'';
+    renderAuthor();
+  });
+});
+['pluginSlug','pluginName','pluginDesc'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('input',renderAuthor);
+});
+(function(){
+  const btn=document.getElementById('copyInstall');
+  if(!btn) return;
+  btn.addEventListener('click',()=>{
+    const txt=document.getElementById('installCommands').textContent;
+    const done=()=>{btn.textContent='✓ COPIED';setTimeout(()=>btn.textContent='Copy All',1800);};
+    if(navigator.clipboard) navigator.clipboard.writeText(txt).then(done).catch(done);
+    else done();
+  });
+})();
+
+/* ═══ FIELD fragments ═══ */
+let fragWallBuilt=false;
+function renderFragWall(){
+  if(fragWallBuilt) return;
+  const wall=document.getElementById('fragWall');
+  if(!wall) return;
+  fragWallBuilt=true;
+  for(let i=0;i<70;i++){
+    const d=document.createElement('div');
+    d.className='field-frag v'+((i%5)+1);
+    d.style.animationDelay=(i*20)+'ms';
+    wall.appendChild(d);
+  }
+}
+
+/* ═══ FIELD simulation ═══ */
+const SIM_KEY='trustui-sim-v1';
+function loadSim(){
+  const raw=localStorage.getItem(SIM_KEY);
+  if(raw) return JSON.parse(raw);
+  const s={events:[],telemetry:42};
+  localStorage.setItem(SIM_KEY,JSON.stringify(s));
+  return s;
+}
+function saveSim(s){localStorage.setItem(SIM_KEY,JSON.stringify(s));}
+function renderSim(){
+  const s=loadSim();
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('simEvents',s.events.length);
+  set('simTelemetry',s.telemetry);
+  const latest=document.getElementById('simLatest');
+  const empty=document.getElementById('simEmpty');
+  if(s.events.length && latest){
+    latest.style.display='';
+    if(empty) empty.style.display='none';
+    const e=s.events[s.events.length-1];
+    latest.innerHTML=`
+      <div class="sim-event-row"><span>Asset</span><b>${e.asset}</b></div>
+      <div class="sim-event-row"><span>Event type</span><b>${e.type}</b></div>
+      <div class="sim-event-row"><span>Pressure Δ</span><b>${e.pressure}%</b></div>
+      <div class="sim-event-row"><span>Flow Δ</span><b>${e.flow}%</b></div>
+      <div class="sim-event-row"><span>Spatial signal</span><b>${e.spatial}%</b></div>
+      <div class="sim-event-row"><span>Created at</span><b>${e.ts}</b></div>
+      <div class="sim-event-class ${e.cls}">${e.cls} · ${e.conf}%</div>`;
+  } else if(latest){
+    latest.style.display='none';
+    if(empty) empty.style.display='';
+  }
+  const hist=document.getElementById('simHistory');
+  if(hist){
+    hist.innerHTML=s.events.length
+      ? s.events.slice(-8).reverse().map(e=>`
+        <div class="sim-history-row">
+          <span class="ts">${e.tsShort}</span>
+          <span class="asset">${e.asset}</span>
+          <span class="conf">P:${e.pressure}% · Q:${e.flow}% · conf ${e.conf}%</span>
+          <span class="cls ${e.cls}">${e.cls}</span>
+        </div>`).join('')
+      : '';
+  }
+}
+function triggerSim(kind){
+  const s=loadSim();
+  const assets=['PIP1','PIP2','PIP3','PIP4','PIP5','NODE1'];
+  const asset=assets[Math.floor(Math.random()*assets.length)];
+  const isBurst=kind==='burst';
+  const pressure=isBurst?Math.round(35+Math.random()*10):Math.round(28+Math.random()*10);
+  const flow=isBurst?Math.round(60+Math.random()*10):Math.round(55+Math.random()*10);
+  const spatial=Math.round(8+Math.random()*10);
+  const conf=Math.round(70+Math.random()*25);
+  const cls=conf>=75?'VERIFIED':(conf>=50?'CANDIDATE':'INSUFFICIENT');
+  const now=new Date();
+  s.events.push({asset,type:isBurst?'burst':'leak',pressure,flow,spatial,conf,cls,
+    ts:now.toLocaleTimeString('en-ZA')+' SAST',
+    tsShort:now.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'})});
+  s.telemetry+=1;
+  saveSim(s);
+  renderSim();
+}
+document.getElementById('simLeak')?.addEventListener('click',()=>triggerSim('leak'));
+document.getElementById('simBurst')?.addEventListener('click',()=>triggerSim('burst'));
+document.getElementById('simReset')?.addEventListener('click',()=>{localStorage.removeItem(SIM_KEY);renderSim();});
+
+/* FIELD assets list */
+const ASSETS=[
+  {id:'PIP1',type:'pipe',meta:'Ø300 · 420m · steel',base:'P=4.2 Q=18'},
+  {id:'PIP2',type:'pipe',meta:'Ø250 · 380m · PVC',base:'P=3.8 Q=14'},
+  {id:'PIP3',type:'pipe',meta:'Ø400 · 610m · ductile',base:'P=5.1 Q=24'},
+  {id:'PIP4',type:'pipe',meta:'Ø200 · 290m · HDPE',base:'P=3.2 Q=11'},
+  {id:'PIP5',type:'pipe',meta:'Ø350 · 520m · steel',base:'P=4.7 Q=21'},
+  {id:'PIP6',type:'pipe',meta:'Ø180 · 240m · PVC',base:'P=2.9 Q=9'},
+  {id:'PIP7',type:'pipe',meta:'Ø300 · 445m · HDPE',base:'P=4.0 Q=17'},
+  {id:'PIP8',type:'pipe',meta:'Ø250 · 360m · steel',base:'P=3.6 Q=13'},
+  {id:'NODE1',type:'node',meta:'pressure sensor',base:'—'},
+  {id:'NODE2',type:'node',meta:'flow meter',base:'—'},
+  {id:'NODE3',type:'node',meta:'acoustic',base:'—'},
+  {id:'NODE4',type:'node',meta:'vibration',base:'—'},
+];
+function renderAssets(){
+  const list=document.getElementById('simAssetsList');
+  if(!list || list.dataset.built) return;
+  list.dataset.built='1';
+  list.innerHTML=ASSETS.map(a=>`
+    <div class="sim-asset-row">
+      <span class="id">${a.id}</span>
+      <span class="type">${a.type}</span>
+      <span class="meta" title="${a.meta}">${a.meta}</span>
+      <span class="base">${a.base}</span>
+    </div>`).join('');
+}
+
+/* Pilot form */
+function submitPilot(ev){
+  ev.preventDefault();
+  const btn=document.getElementById('pilotSubmit');
+  const orig=btn.textContent;
+  btn.textContent='✓ Submitted · id PIL-'+String(Date.now()).slice(-6);
+  btn.style.background='var(--pass-green)';
+  setTimeout(()=>{btn.textContent=orig;btn.style.background='';ev.target.reset();},2200);
+}
+
+/* ═════════════════════════════════════════════════════════
+   SPATIAL — Lemon Tree Tracker (Surface 19)
+   Stack: FIELD (store) + FORGE (trust root)
+   Lazy-init: only loads when SPATIAL tab is first clicked
+   ═════════════════════════════════════════════════════════ */
+const LEMON_ASSETS=[
+  {id:'LEMON-001',lat:-26.2205,lng:28.1512,health:84,last:'2m ago', sha:'a3f7c9b2e8d4f1a6c0b5e9d2f4a8c1b7e3d6f9a2c5b8e1d4f7a0b3c6e9d2f5a8'},
+  {id:'LEMON-002',lat:-26.2189,lng:28.1724,health:79,last:'4m ago', sha:'b4e8d0c3f9e5a2b7d1c6f0e3a5b9c2c8f4e7a0b3d6c9f2e5a8b1c4d7f0e3a6b9'},
+  {id:'LEMON-003',lat:-26.2241,lng:28.1856,health:91,last:'1m ago', sha:'c5f9e1d4a0b6c3e8f2d7a1b4c6d0e3f9a5b8c2d6f0e4a7b1c5d8f2e6a0b4c7d1'},
+  {id:'LEMON-004',lat:-26.2158,lng:28.1638,health:62,last:'8m ago', sha:'d6a0f2e5b1c7d4f9a3e8b2c5d7a1f4a0b6c9e3d7a1b5c8f2e6a0b4d7c1f5a8b2'},
+  {id:'LEMON-005',lat:-26.2278,lng:28.1942,health:58,last:'12m ago',sha:'e7b1a3c6f2d8e5b0c4f9a3d7b6a1c8f4e0b5d2a6c9f3e7a1b4d8c0f6e9a2d5b8'},
+  {id:'LEMON-006',lat:-26.2114,lng:28.1489,health:88,last:'3m ago', sha:'f8c2b4d7a3e9f6c1d5b0a4e8c7b2f5a1d6c9e3b7a0f4d8c2e6b1a5d9c3f7e0b4'},
+  {id:'LEMON-007',lat:-26.2331,lng:28.1605,health:74,last:'5m ago', sha:'a9d3c5e8b4f0a7d2c6b1e5a9f8c3d6b0e4a7c2f5d8b1e6a4c0b9f3d7e1a5c8'},
+  {id:'LEMON-008',lat:-26.2187,lng:28.2004,health:95,last:'30s ago',sha:'b0e4d6f1c7a3b9e5d0c4f8a2b6c1e7d3a5f9c2b6e0d4a8c1f5b9e3d7a0c4f8b2'},
+  {id:'LEMON-009',lat:-26.2226,lng:28.1418,health:67,last:'7m ago', sha:'c1f5e7a2d8b4c0f6e1a5d9c3b7a2f8e4d0b6c9f3a7e1d5b8c2f6a0b4d7e1c5'},
+  {id:'LEMON-010',lat:-26.2289,lng:28.1783,health:81,last:'2m ago', sha:'d2a6f8b3e9c5d1a7f2b6e0c4d8a3f5b1e7c0d4a8b2f6e0c5d9a3b7f1e4c8d2'},
+  {id:'LEMON-011',lat:-26.2203,lng:28.1696,health:43,last:'15m ago',sha:'e3b7a9c4f0d6e2b8a3c7d1e5b9a4f6c2d8b0e4a7c1f5d9b3e6a0c4f8d2b5e1a7'},
+  {id:'LEMON-012',lat:-26.2267,lng:28.1853,health:90,last:'1m ago', sha:'f4c8b0d5a1e7f3c9b4d8a2e6c0b5f9a3d7e1c4b8f2a6d0e5b9c3f7a1d4e8b2'}
+];
+const fmtSha = s => s.length>12 ? s.slice(0,8)+'…'+s.slice(-4) : s;
+const healthColor = h => h>=80 ? '#4ade80' : (h>=60 ? '#f59e0b' : '#ef4444');
+
+let spatialInited=false;
+function renderSpatial(){
+  renderSpatialLedger();
+  if(spatialInited) return;
+  spatialInited=true;
+  if(typeof maplibregl==='undefined'){
+    document.getElementById('spatialMap').innerHTML='<div style="display:flex;height:100%;align-items:center;justify-content:center;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--text-dim);text-align:center;padding:2rem">// MAPLIBRE GL JS FAILED TO LOAD — check CDN</div>';
+    return;
+  }
+  const map=new maplibregl.Map({
+    container:'spatialMap',
+    style:'https://tiles.openfreemap.org/styles/dark',
+    center:[28.17,-26.22],
+    zoom:13,
+    attributionControl:false
+  });
+  map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'bottom-right');
+  map.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
+  map.on('load',()=>{
+    LEMON_ASSETS.forEach(a=>{
+      const el=document.createElement('div');
+      el.style.cssText='width:14px;height:14px;border-radius:50%;border:2px solid #050507;background:'+healthColor(a.health)+';box-shadow:0 0 0 2px '+healthColor(a.health)+',0 0 12px '+healthColor(a.health)+';cursor:pointer';
+      el.title=a.id+' · R'+a.health+' · '+a.last;
+      el.addEventListener('click',()=>{
+        new maplibregl.Popup({offset:16,maxWidth:'280px'})
+          .setLngLat([a.lng,a.lat])
+          .setHTML('<div style="font-family:JetBrains Mono,monospace;font-size:11px;line-height:1.55">'+
+            '<div style="color:#a3e635;font-weight:700;letter-spacing:.06em">'+a.id+'</div>'+
+            '<div style="color:#b4b4be;margin-top:2px">'+a.lat.toFixed(5)+'°S, '+a.lng.toFixed(5)+'°E</div>'+
+            '<div style="color:#71717a;margin-top:2px">Health <b style="color:'+healthColor(a.health)+'">R'+a.health+'</b> · '+a.last+'</div>'+
+            '<div style="color:#a3e635;margin-top:4px;word-break:break-all">'+fmtSha(a.sha)+'</div>'+
+            '<div style="color:#71717a;margin-top:4px;font-size:9px">FORGE signed · Ed25519</div></div>')
+          .addTo(map);
+      });
+      new maplibregl.Marker({element:el,anchor:'center'})
+        .setLngLat([a.lng,a.lat])
+        .addTo(map);
+    });
+  });
+}
+function renderSpatialLedger(){
+  const root=document.getElementById('spatialLedger');
+  if(!root || root.dataset.built) return;
+  root.dataset.built='1';
+  root.innerHTML=LEMON_ASSETS.map(a=>`
+    <div style="display:grid;grid-template-columns:80px 60px 1fr auto;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--surface-border);border-left:3px solid ${healthColor(a.health)};border-radius:6px;background:var(--bg-surface)">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-primary);font-weight:700;letter-spacing:.04em">${a.id}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${healthColor(a.health)};font-weight:700">R${a.health}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis">SHA ${fmtSha(a.sha)} · ${a.lat.toFixed(4)}°S, ${a.lng.toFixed(4)}°E</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted)">${a.last}</span>
+    </div>`).join('');
+}
+
+/* ═════════════════════════════════════════════════════════
+   SURV — Surveillance Monitor (Surface 20)
+   Stack: PRESS (capture) → FORGE (verify) → FIELD (store)
+   ═════════════════════════════════════════════════════════ */
+const SURV_FEEDS=[
+  {id:'CAM-01',name:'Industrial yard',loc:'Germiston · loading bay',sha:'a3f7c9b2…f5a8',chunks:642,size:'3.1 GB',last:'5s ago'},
+  {id:'CAM-02',name:'Parking lot',loc:'Germiston · north gate',sha:'b4e8d0c3…a6b9',chunks:598,size:'2.9 GB',last:'5s ago'},
+  {id:'CAM-03',name:'Corridor',loc:'Germiston · admin wing',sha:'c5f9e1d4…c7d1',chunks:611,size:'3.0 GB',last:'5s ago'},
+  {id:'CAM-04',name:'Perimeter gate',loc:'Germiston · south fence',sha:'d6a0f2e5…a8b2',chunks:567,size:'2.8 GB',last:'30s ago'}
+];
+let survInited=false;
+function renderSurv(){
+  if(survInited) return;
+  survInited=true;
+  const grid=document.getElementById('survGrid');
+  if(!grid) return;
+  grid.innerHTML=SURV_FEEDS.map(f=>`
+    <div style="position:relative;border:1px solid var(--surface-border);border-left:3px solid var(--surface-accent);border-radius:8px;overflow:hidden;background:#0a0a0c">
+      <div style="aspect-ratio:16/9;background:linear-gradient(135deg,#0a0a0c 0%,#14141a 50%,#0a0a0c 100%);position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent 0,transparent 2px,rgba(0,0,0,0.3) 3px,rgba(0,0,0,0.3) 4px);opacity:0.6"></div>
+        <div style="position:absolute;top:8px;left:8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:1px;background:rgba(5,5,7,0.85);padding:3px 7px;border-radius:3px;border:1px solid var(--surface-border)">${f.id} · ${f.loc}</div>
+        <div style="position:absolute;top:8px;right:8px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--pass-green);background:rgba(48,164,108,0.15);border:1px solid rgba(48,164,108,0.5);border-radius:4px;padding:4px 10px;letter-spacing:0.8px">✓ CLEAN</div>
+        <div style="position:absolute;bottom:8px;left:8px;right:8px;display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted)">
+          <span>5s chunk · CLAMAV PASS</span>
+          <span>${f.last}</span>
+        </div>
+        <div style="position:absolute;bottom:0;left:0;height:3px;background:var(--surface-accent);width:42%"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;border:2px solid rgba(163,230,53,0.3);border-radius:50%;animation:pulse 2s infinite"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--surface-accent);letter-spacing:1px;background:rgba(5,5,7,0.9);padding:2px 8px;border-radius:3px">● LIVE</div>
+      </div>
+      <div style="padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:8px;border-top:1px solid var(--surface-border)">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-primary);font-weight:700">${f.name}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px">SHA ${fmtSha(f.sha)} · ${f.chunks} chunks · ${f.size}</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--surface-accent);text-align:right;letter-spacing:0.5px">
+          ED25519<br>VERIFIED
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ═════════════════════════════════════════════════════════
+   TWIN — Digital Twin Hologram (Surface 21)
+   Stack: PRESS (Motion) + FIELD (Archive Wall)
+   Three.js Fresnel shader + ghost history + 4 LODs
+   ═════════════════════════════════════════════════════════ */
+const TWIN_HISTORY=Array.from({length:14},(_,i)=>{
+  const h=Math.round(50+30*Math.sin(i*0.7)+Math.random()*15);
+  return {state:i+1, health:Math.max(35,Math.min(98,h))};
+});
+let twinInited=false;
+function renderTwin(){
+  renderTwinHistory();
+  if(twinInited) return;
+  twinInited=true;
+  // Try to init Three.js scene; if CDN failed, render static fallback
+  if(typeof THREE==='undefined'){
+    document.getElementById('twinCanvas').innerHTML+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono,monospace;font-size:11px;color:var(--text-dim);text-align:center;padding:2rem">// THREE.JS FAILED TO LOAD — showing static hologram preview</div>';
+    return;
+  }
+  const canvas=document.getElementById('twinCanvas');
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);
+  canvas.appendChild(renderer.domElement);
+  const scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x0a0a0c,0.045);
+  const camera=new THREE.PerspectiveCamera(45,canvas.clientWidth/canvas.clientHeight,0.1,1000);
+  camera.position.set(2.5,2,2.5);
+  camera.lookAt(0,0.3,0);
+  scene.add(new THREE.AmbientLight(0x222230,1.4));
+  const key=new THREE.DirectionalLight(0xa3e635,1.2); key.position.set(5,6,4); scene.add(key);
+  const fill=new THREE.DirectionalLight(0x0090FF,0.4); fill.position.set(-4,3,-2); scene.add(fill);
+  // wireframe terrain
+  const terrain=new THREE.Mesh(
+    new THREE.PlaneGeometry(2,2,32,32).rotateX(-Math.PI/2),
+    new THREE.MeshBasicMaterial({color:0x1a1a22,wireframe:true,transparent:true,opacity:0.55})
+  );
+  scene.add(terrain);
+  const grid=new THREE.GridHelper(2,16,0x2a2a33,0x1a1a22);
+  grid.position.y=-0.01; scene.add(grid);
+  // block boundary
+  const box=new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(2,0.5,2)),
+    new THREE.LineBasicMaterial({color:0xa3e635,transparent:true,opacity:0.45})
+  );
+  box.position.y=0.25; scene.add(box);
+  // 12 hologram instances (lemon trees) + ghosts
+  const trees=[];
+  for(let i=0;i<12;i++){
+    const angle=(i/12)*Math.PI*2;
+    const rad=0.3+Math.random()*0.5;
+    const x=Math.cos(angle)*rad, z=Math.sin(angle)*rad;
+    const health=TWIN_HISTORY[TWIN_HISTORY.length-1].health;
+    const color=health>=80?0x4ade80:(health>=60?0xf59e0b:0xE5484D);
+    // current
+    const cone=new THREE.Mesh(
+      new THREE.ConeGeometry(0.07,0.2,6,1,true),
+      new THREE.MeshBasicMaterial({color,wireframe:true,transparent:true,opacity:0.85})
+    );
+    cone.position.set(x,0.3,z); scene.add(cone);
+    // ghost (slight offset)
+    const ghost=new THREE.Mesh(
+      new THREE.ConeGeometry(0.075,0.2,6,1,true),
+      new THREE.MeshBasicMaterial({color:0x71717a,wireframe:true,transparent:true,opacity:0.35})
+    );
+    ghost.position.set(x+0.03,0.31,z+0.03); scene.add(ghost);
+    // ring
+    const ring=new THREE.Mesh(
+      new THREE.RingGeometry(0.1,0.13,20),
+      new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.5,side:THREE.DoubleSide})
+    );
+    ring.position.set(x,0.005,z); ring.rotation.x=-Math.PI/2; scene.add(ring);
+    trees.push({cone,ghost,ring,x,z});
+  }
+  // point cloud
+  const pcGeo=new THREE.BufferGeometry();
+  const pcCount=600, pcPos=new Float32Array(pcCount*3);
+  for(let i=0;i<pcCount;i++){
+    const a=Math.random()*Math.PI*2, r=Math.sqrt(Math.random())*0.9;
+    pcPos[i*3]=Math.cos(a)*r;
+    pcPos[i*3+1]=Math.random()*0.4+0.02;
+    pcPos[i*3+2]=Math.sin(a)*r;
+  }
+  pcGeo.setAttribute('position',new THREE.BufferAttribute(pcPos,3));
+  const pc=new THREE.Points(pcGeo,new THREE.PointsMaterial({color:0xa3e635,size:0.02,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,depthWrite:false}));
+  scene.add(pc);
+  // camera controls (drag-rotate)
+  let theta=0.5, phi=0.8, dragging=false, sx=0, sy=0;
+  canvas.addEventListener('pointerdown',e=>{dragging=true; sx=e.clientX; sy=e.clientY; canvas.style.cursor='grabbing'});
+  window.addEventListener('pointerup',()=>{dragging=false; canvas.style.cursor='grab'});
+  window.addEventListener('pointermove',e=>{
+    if(!dragging) return;
+    theta-=(e.clientX-sx)*0.005; phi=Math.max(0.1,Math.min(1.4,phi-(e.clientY-sy)*0.004));
+    sx=e.clientX; sy=e.clientY;
+    camera.position.x=2.5*Math.sin(phi)*Math.cos(theta);
+    camera.position.y=2.5*Math.cos(phi);
+    camera.position.z=2.5*Math.sin(phi)*Math.sin(theta);
+    camera.lookAt(0,0.3,0);
+  });
+  canvas.style.cursor='grab';
+  // animate
+  let t0=performance.now();
+  function tick(now){
+    const t=now/1000;
+    trees.forEach((h,i)=>{
+      h.ring.material.opacity=0.4+0.3*(0.5+0.5*Math.sin(t*2+h.x*10));
+      h.ghost.rotation.y=Math.sin(t*0.3+i)*0.05;
+    });
+    pc.rotation.y=t*0.02;
+    renderer.render(scene,camera);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  window.addEventListener('resize',()=>{
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h; camera.updateProjectionMatrix();
+  });
+}
+function renderTwinHistory(){
+  const root=document.getElementById('twinHistory');
+  if(!root || root.dataset.built) return;
+  root.dataset.built='1';
+  root.innerHTML=TWIN_HISTORY.map((h,i)=>{
+    const prev=i>0?TWIN_HISTORY[i-1].health:h.health;
+    const delta=h.health-prev;
+    const cls=i===TWIN_HISTORY.length-1?'NOW':(delta>=0?'UP':'DOWN');
+    const col=cls==='NOW'?'var(--surface-accent)':(delta>=0?'var(--pass-green)':'var(--fail-red)');
+    return `<div style="display:grid;grid-template-columns:80px 80px 1fr auto;gap:10px;padding:7px 10px;border:1px solid var(--surface-border);border-radius:5px;background:var(--bg-base);font-family:'JetBrains Mono',monospace;font-size:11px;align-items:center">
+      <span style="color:var(--text-dim)">STATE ${String(h.state).padStart(2,'0')}</span>
+      <span style="color:var(--text-muted)">T-${(13-i)*1.7|0}h</span>
+      <span style="color:var(--text-primary)">Health R${h.health}</span>
+      <span style="color:${col};font-weight:700">${i>0?(delta>=0?'+':'')+delta:cls}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ═══ BOOT ═══ */
+(function boot(){
+  const db=loadDb();
+  if(db.proofs.length===0){
+    db.proofs.push({
+      id:'PRF-000000',poolId:'PILOT-C2',memberId:'thabo',amount:50000,
+      currency:'ZAR',receiptHash:'seed0000seed0000seed0000seed0000',
+      status:'anchored',createdAt:new Date().toISOString(),
+    });
+    db.counter=1;saveDb(db);
+  }
+  renderPools();
+  updateBreadcrumb('forge','root');
+})();
+</script>
+
+</body>
+</html>
